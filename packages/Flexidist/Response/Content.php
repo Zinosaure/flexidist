@@ -1,25 +1,14 @@
 <?php
 
-/**
-*
-*/
-namespace outputs;
+namespace Flexidist\Response;
 
-/**
-*
-*/
-class OutputHTML {
+class Content {
 
-    /**
-    *
-    */
-    private $template = null;
-    private $context = [];
-
-    /**
-    *
-    */
-    public function __construct(?string $template = null, array $context = []) {
+    use \traits\dotnotation;
+    
+    protected $template = null;
+    
+    public function __construct(?string $template = null, array $variables = []) {
         $this->template = $template ?: implode("\n", [
             '<!DOCTYPE html>',
             '<html {{ function.html_attributes(html.attributes) }}>',
@@ -30,22 +19,22 @@ class OutputHTML {
             "\t\t" . '<meta http-equiv="X-UA-Compatible" content="ie=edge">',
             "\t\t" . '<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">',
             "\t\t" . '<meta name="description" content="{{ htmlspecialchars(html.head.description) }}" />',
-            "\t\t" . '{{ html.head.content }}',
+            "\t\t" . '{% extends("head_content.phtml") %}',
             "\n\t" . '</head>',
             "\t" . '<body {{ function.html_attributes(html.body.attributes) }}>',
-            "\t\t" . '{{ html.body.content }}',
+            "\t\t" . '{% extends("html_content.phtml") %}',
             "\n\t" . '</body>',
             '</html>',
         ]);
-        $this->context = array_replace_recursive([
+        $this->dn_init(array_replace_recursive([
             'function' => [
-                'html_attributes' => function (array $attributes): string {
+                'html_attributes' => function(array $attributes): string {
                     $stringified_attributes = [];
-
+                    
                     foreach ($attributes as $name => $value)
                         if (!empty($name) && is_string($name) && (is_string($value) || is_null($value))  && $value !== false)
                             $stringified_attributes[] = sprintf(' %s="%s"', $name, htmlspecialchars($value));
-
+                        
                     return trim(implode(null, $stringified_attributes));
                 },
             ],
@@ -69,66 +58,49 @@ class OutputHTML {
                     'content' => null,
                 ],
             ],
-        ], $context);
+        ], $variables));
     }
 
-    /**
-    *
-    */
-    final public function get(string $name = null) {
-        if (is_null($name))
-            return $this->context;
-
-        return eval('return $this->context["' . implode('"]["', explode('.', $name)) . '"];');
-    }
-
-    /**
-    *
-    */
-    final public function set(string $name, $mixed_value, bool $trans_type = false) {
-        eval('
-            $attribute = &$this->context["' . implode('"]["', explode('.', $name)) . '"];
-            $attribute = !is_null($attribute) ? $attribute : "";
-
-            if ($trans_type || is_null($attribute) || gettype($attribute) == gettype($mixed_value))
-                $attribute = $mixed_value;
-        ');
-    }
-
-    /**
-    *
-    */
-    final public function unset(string $name) {
-        eval('unset($this->context["' . implode('"]["', explode('.', $name)) . '"]);');
-    }
-
-    /**
-    *
-    */
-    final public function template(string $template = null): string {
-        return $this->template = $template ?: $this->template;
-    }
-
-    /**
-    *
-    */
-    final public static function express(string $expression): string {
+    public static function transform(string $expression): string {
         $variables = [];
         $double_quote_opened = false;
         $keywords = [
-            '&&' => ' && ', '||' => ' || ', '&' => ' && ', '|' => ' || ', ',' => ', ', '(' => '(', ')' => ')', '!' => '!', '::' => '::', '?' => ' ?',
-            ':' => ': ', '==' => ' == ', '===' => ' === ', '!=' => ' != ', '!==' => ' !== ', '>=' => ' >= ', '<=' => ' <= ', '<>' => ' <> ', '>' => '>',
-            '<' => '<', '=' => ' = ', '%' => ' % ', '*' => ' * ', '/' => ' / ', '+' => ' + ', '-' => ' - '
+            '&&' => ' && ',
+            '||' => ' || ',
+            '&' => ' && ',
+            '|' => ' || ',
+            ',' => ', ',
+            '(' => '(',
+            ')' => ')',
+            '!' => '!',
+            '::' => '::',
+            '?' => ' ?',
+            ':' => ': ',
+            '==' => ' == ',
+            '===' => ' === ',
+            '!=' => ' != ',
+            '!==' => ' !== ',
+            '>=' => ' >= ',
+            '<=' => ' <= ',
+            '<>' => ' <> ',
+            '>' => '>',
+            '<' => '<',
+            '=' => ' = ',
+            '%' => ' % ',
+            '*' => ' * ',
+            '/' => ' / ',
+            '+' => ' + ',
+            '-' => ' - ',
         ];
         $keywords_keys = array_keys($keywords);
-
+    
         foreach (preg_split('/\s*(&&|\|\||&|\||,|\)|\(|={1,3}|!={1,2}|>=|<=|<>|>|<|!|\?|:{1,2}|%|\*|\/|\-|\+)\s*/is', $expression, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY) as $i => $match) {
             if ($double_quote_opened || $double_quote_opened = preg_match('/^"/isU', $match))
                 $variables[$i] = $match;
-
+    
             if (preg_match('/"$/isU', $match))
                 $double_quote_opened = false;
-
+                
             if (!($match = trim($match))
                 || (in_array($match, $keywords_keys) && $match = $keywords[$match])
                 || is_numeric($match)
@@ -136,7 +108,7 @@ class OutputHTML {
                 || defined($match)
                 || preg_match('/^\$/isU', $match))
                 $variables[$i] = $match;
-
+    
             if (!isset($variables[$i])) {
                 if (($list = explode('.', $match)) && count($list) > 1) {
                     $variable = array_shift($list);
@@ -145,68 +117,86 @@ class OutputHTML {
                     $variables[$i] = sprintf('$%s', $match);
             }
         }
-
+    
         return implode(null, $variables);
     }
 
-    /**
-    *
-    */
-    final public static function conv2php(string $template): string {
+    public static function format(string $template, int $max_recursive = 3): string {
         ob_start();
             if (preg_match('/\.phtml$/isU', $template) || (is_file($template) && is_readable($template)))
                 $template = file_get_contents($template);
-
+ 
             $patterns = [
-                '/{%\s+(import|include|extends)\s*\((.+)\)\s+%}/isU' => function(string $template, array $matches): string {
+                '/{%\s+(extends)\s*\((.+)\)\s+%}/isU' => function(string $template, array $matches) use($max_recursive): string {
+                    ob_start();
+                        foreach ($matches as $i => $match) {
+                            if ($max_recursive >= 0 && $content = @file_get_contents(eval('return ' . $match[2] . ';')))
+                                $template = str_replace($match[0], self::format($content, -- $max_recursive), $template);
+                            else if ($max_recursive < 0)
+                                $template = str_replace($match[0], sprintf('<!-- extends(%s): Maximum "extends" nesting level reached, aborting! -->', $match[2]), $template);
+                            else
+                                $template = str_replace($match[0], sprintf('<!-- extends(%s): failed to open stream, no such file found. -->', $match[2]), $template);
+                        }
+
+                        echo $template;
+
+                    return ob_get_clean();
+                },
+                '/{%\s+(include|include_once|require|require_once)\s*\((.+)\)\s+%}/isU' => function(string $template, array $matches): string {
                     ob_start();
                         foreach ($matches as $i => $match)
-                            $template = str_replace($match[0], file_get_contents(eval('return ' . $match[2] . ';')), $template);
+                            $template = str_replace($match[0], sprintf('<?php %s(%s) ?>', $match[1], self::transform($match[2])), $template);
 
-                    echo $template;
+                        echo $template;
 
                     return ob_get_clean();
                 },
                 '/\{%\s+(end|endfor|endif|close)\s+%\}/isU' => function(string $template, array $matches): string {
                     foreach ($matches as $i => $match)
                         $template = str_replace($match[0], '<?php } ?>', $template);
-
+                
                     return $template;
                 },
                 '/\{%\s+(for|loop)\s+([a-z0-9_]+)\s*(,\s*([a-z0-9_]*))?\s+in\s+(.+)\s+%\}/isU' => function(string $template, array $matches): string {
                     foreach ($matches as $i => $match) {
                         if ($match[2] && $match[3])
-                            $php_code = sprintf('<?php foreach(%s ?? [] as $%s => $%s) { ?>', self::express($match[5]), $match[2], $match[4]);
+                            $php_code = sprintf('<?php foreach(%s ?? [] as $%s => $%s) { ?>', self::transform($match[5]), $match[2], $match[4]);
                         else
-                            $php_code = sprintf('<?php foreach(%s ?? [] as $%s) { ?>', self::express($match[5]), $match[2]);
-
+                            $php_code = sprintf('<?php foreach(%s ?? [] as $%s) { ?>', self::transform($match[5]), $match[2]);
+                
                         $template = str_replace($match[0], $php_code, $template);
                     }
-
+                
                     return $template;
                 },
                 '/\{%\s+(if)\s+(.+)\s+%\}/isU' => function(string $template, array $matches): string {
                     foreach($matches as $i => $match)
-                        $template = str_replace($match[0], sprintf('<?php if (%s) { ?>', self::express($match[2])), $template);
+                        $template = str_replace($match[0], sprintf('<?php if (%s) { ?>', self::transform($match[2])), $template);
 
                     return $template;
                 },
                 '/\{%\s+(else\s*if|elif)\s+(.+)\s+%\}/isU' => function(string $template, array $matches): string {
                     foreach($matches as $i => $match)
-                        $template = str_replace($match[0], sprintf('<?php } else if (%s) { ?>', self::express($match[2])), $template);
+                        $template = str_replace($match[0], sprintf('<?php } else if (%s) { ?>', self::transform($match[2])), $template);
 
                     return $template;
                 },
                 '/\{%\s+(else)\s+%\}/isU' => function(string $template, array $matches): string {
                     foreach ($matches as $i => $match)
                         $template = str_replace($match[0], '<?php } else { ?>', $template);
-
+                
                     return $template;
                 },
                 '/\{\{\s+(.+)\s+\}\}/isU' => function(string $template, array $matches): string {
                     foreach ($matches as $i => $match)
-                        $template = str_replace($match[0], sprintf('<?= %s ?>', self::express($match[1])), $template);
-
+                        $template = str_replace($match[0], sprintf('<?= %s ?>', self::transform($match[1])), $template);
+            
+                    return $template;
+                },
+                '/\{\{!\s+([a-z0-9_\.]+)\s+\}\}/isU' => function(string $template, array $matches): string {
+                    foreach ($matches as $i => $match)
+                        $template = str_replace($match[0], self::transform($match[1]), $template);
+            
                     return $template;
                 }
             ];
@@ -214,41 +204,42 @@ class OutputHTML {
             foreach($patterns as $pattern => $callback)
                 if (preg_match_all($pattern, $template, $matches, PREG_SET_ORDER))
                     $template = $callback($template, $matches);
-
+            
             echo $template;
 
         return trim(ob_get_clean());
     }
 
-    /**
-    *
-    */
-    final public function preprocess(string $context, string $template): self {
-        $this->template = preg_replace('/\{\{\s+' . preg_quote($context, '/') . '\s+\}\}/isU', $template, $this->template);
-
-        return $this;
-    }
-
-    /**
-    *
-    */
-    final public function render(array $context = [], array $headers = []) {
-        foreach ($headers ?? ['Content-Type: text/html; charset=utf-8'] as $value)
-            header($value);
-
-        extract(array_replace_recursive((array) $this->context, $context));
-        echo eval('?>' . self::conv2php($this->template));
-    }
-
-    /**
-    *
-    */
-    final public static function evaluate(string $template, array $context = []): string {
+    public static function evaluate(string $template, array $variables = []): string {
         ob_start();
-            extract($context);
-            eval('?>' . self::conv2php($template));
+            extract($variables);
+            eval('?>' . self::format($template));
 
         return ob_get_clean();
+    }
+
+    public function preformat(string $name, string $content, bool $format_before = false) {
+        if ($format_before && preg_match_all('/{%\s+(extends)\s*\((.+)\)\s+%}/isU', $this->template, $matches, PREG_SET_ORDER)) {
+            ob_start();
+                foreach ($matches as $i => $match) {
+                    if ($max_recursive >= 0 && $content = @file_get_contents(eval('return ' . $match[2] . ';')))
+                        $template = str_replace($match[0], self::format($content, -- $max_recursive), $template);
+                    else if ($max_recursive < 0)
+                        $template = str_replace($match[0], sprintf('<!-- extends(%s): Maximum "extends" nesting level reached, aborting! -->', $match[2]), $template);
+                    else
+                        $template = str_replace($match[0], sprintf('<!-- extends(%s): failed to open stream, no such file found. -->', $match[2]), $template);
+                }
+
+        		echo self::format($this->template);
+        		
+            $this->template = ob_get_clean();
+        }
+        
+        $this->template = preg_replace('/\{\{!?\s+' . preg_quote($name, '/') . '\s+\}\}/isU', $content, $this->template);
+    }
+
+    public function output(bool $evaluate = true) {
+        echo $evaluate ? self::evaluate($this->template, $this->dn_get()) : self::format($this->template);
     }
 }
 ?>
