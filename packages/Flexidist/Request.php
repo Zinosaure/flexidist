@@ -41,7 +41,7 @@ class Request {
             'session' => $session_started ? $_SESSION : [],
             'attributes' => [
                 'full_request' => $full = explode('/', trim(preg_replace('/\?(.*)?/is', null, $_SERVER['REQUEST_URI']), '/')),
-                'request' => array_splice($full, count(explode('/', dirname($_SERVER['SCRIPT_NAME']))) - 1)
+                'request' => array_splice($full, count(explode('/', dirname($_SERVER['SCRIPT_NAME']))) - 2)
             ],
         ]);
     }
@@ -122,7 +122,7 @@ class Request {
     public function execute(\Closure $callback, array $args = []) {
         $callback = \Closure::bind($callback, $this, get_class());
 
-        foreach ((new ReflectionFunction($callback))->getParameters() as $param)
+        foreach ((new \ReflectionFunction($callback))->getParameters() as $param)
             if (($param_type = $param->getType()) && !in_array($class_name = $param_type->getName(), ['int', 'string']))
                 $args[$param->getName()] = new $class_name($args[$param->getName()]);
  

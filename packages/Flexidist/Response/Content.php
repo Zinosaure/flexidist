@@ -19,10 +19,10 @@ class Content {
             "\t\t" . '<meta http-equiv="X-UA-Compatible" content="ie=edge">',
             "\t\t" . '<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">',
             "\t\t" . '<meta name="description" content="{{ htmlspecialchars(html.head.description) }}" />',
-            "\t\t" . '{% extends("head_content.phtml") %}',
+            "\t\t" . '{% extends(TEMPLATES_PATH . "head_content.phtml") %}',
             "\n\t" . '</head>',
             "\t" . '<body {{ function.html_attributes(html.body.attributes) }}>',
-            "\t\t" . '{% extends("html_content.phtml") %}',
+            "\t\t" . '{% extends(TEMPLATES_PATH . "html_content.phtml") %}',
             "\n\t" . '</body>',
             '</html>',
         ]);

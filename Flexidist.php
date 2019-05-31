@@ -97,10 +97,9 @@ if (!file_exists($filename = APPLICATION_PATH . '.htaccess')) {
 	@chmod($filename, 0777);
 }
 
-/*
+
 if (IS_LOCALHOST && !preg_match('/^www\./is', $_SERVER['SERVER_NAME']))
 	return header('Location: //www.' . $_SERVER['SERVER_NAME'] . $_SERVER['REQUEST_URI'], true, 301);
 else if (preg_match('/index\.(php|html|htm)$/is', $_SERVER['REQUEST_URI']))
 	return header('Location: ' . SERVER_NAME . DOCUMENT_ROOT, true, 301);
-*/
 ?>
