@@ -210,32 +210,19 @@ class Content {
         return trim(ob_get_clean());
     }
 
+    public function extends(string $name, string $content, bool $format_before = false) {
+        if ($format_before)
+        	$this->template = self::format($this->template);
+        
+        $this->template = preg_replace('/\<\{!?\s+' . preg_quote($name, '/') . '\s+\}\>/isU', '{% extends(' . $content . ') %}', $this->template);
+    }
+
     public static function evaluate(string $template, array $variables = []): string {
         ob_start();
             extract($variables);
             eval('?>' . self::format($template));
 
         return ob_get_clean();
-    }
-
-    public function preformat(string $name, string $content, bool $format_before = false) {
-        if ($format_before && preg_match_all('/{%\s+(extends)\s*\((.+)\)\s+%}/isU', $this->template, $matches, PREG_SET_ORDER)) {
-            ob_start();
-                foreach ($matches as $i => $match) {
-                    if ($max_recursive >= 0 && $content = @file_get_contents(eval('return ' . $match[2] . ';')))
-                        $template = str_replace($match[0], self::format($content, -- $max_recursive), $template);
-                    else if ($max_recursive < 0)
-                        $template = str_replace($match[0], sprintf('<!-- extends(%s): Maximum "extends" nesting level reached, aborting! -->', $match[2]), $template);
-                    else
-                        $template = str_replace($match[0], sprintf('<!-- extends(%s): failed to open stream, no such file found. -->', $match[2]), $template);
-                }
-
-        		echo self::format($this->template);
-        		
-            $this->template = ob_get_clean();
-        }
-        
-        $this->template = preg_replace('/\{\{!?\s+' . preg_quote($name, '/') . '\s+\}\}/isU', $content, $this->template);
     }
 
     public function output(bool $evaluate = true) {
