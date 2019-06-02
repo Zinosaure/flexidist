@@ -7,6 +7,7 @@ class Content {
     use \traits\dotnotation;
     
     protected $template = null;
+    protected $branches = [];
     
     public function __construct(?string $template = null, array $variables = []) {
         $this->template = $template ?: implode("\n", [
@@ -19,11 +20,11 @@ class Content {
             "\t\t" . '<meta http-equiv="X-UA-Compatible" content="ie=edge">',
             "\t\t" . '<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">',
             "\t\t" . '<meta name="description" content="{{ htmlspecialchars(html.head.description) }}" />',
-            "\t\t" . '{% extends(TEMPLATES_PATH . "head_content.phtml") %}',
-            "\n\t" . '</head>',
+            "\t\t" . '{% branch head_content %}',
+            "\t" . '</head>',
             "\t" . '<body {{ function.html_attributes(html.body.attributes) }}>',
-            "\t\t" . '{% extends(TEMPLATES_PATH . "html_content.phtml") %}',
-            "\n\t" . '</body>',
+            "\t\t" . '{% branch html_content %}',
+            "\t" . '</body>',
             '</html>',
         ]);
         $this->dn_init(array_replace_recursive([
@@ -209,24 +210,33 @@ class Content {
 
         return trim(ob_get_clean());
     }
-
-    public function extends(string $name, string $content, bool $format_before = false) {
-        if ($format_before)
-        	$this->template = self::format($this->template);
-        
-        $this->template = preg_replace('/\<\{!?\s+' . preg_quote($name, '/') . '\s+\}\>/isU', '{% extends(' . $content . ') %}', $this->template);
+    
+    public function checkout(string $name, string $template = null, array $variables = []): self {
+    	if (!isset($this->branches[$name]) || !is_null($template)) {
+    		$this->branches[$name] = new self($template, $variables);
+    		$this->branches[$name]->dn_unset('function', 'html');
+    	}
+    	
+    	return $this->branches[$name];
     }
-
-    public static function evaluate(string $template, array $variables = []): string {
+    
+    public function evaluate(bool $evaluate = true): string {
+    	$variables = $this->dn_get();
+    	
+    	foreach($this->branches as $name => $branch) {
+    		$variables['branch'][$name] = $branch->dn_get();
+    		$this->template = preg_replace('/\{%\s+branch\s+(' . preg_quote($name, '/') . ')\s+%\}/isU', $branch->evaluate(false), $this->template);
+    	}
+    	
         ob_start();
             extract($variables);
-            eval('?>' . self::format($template));
+            echo $evaluate ? eval('?>' . self::format($this->template)) : self::format($this->template);
 
         return ob_get_clean();
     }
 
     public function output(bool $evaluate = true) {
-        echo $evaluate ? self::evaluate($this->template, $this->dn_get()) : self::format($this->template);
+        echo $this->evaluate($evaluate);
     }
 }
 ?>

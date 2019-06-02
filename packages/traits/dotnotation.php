@@ -52,8 +52,9 @@ trait dotnotation {
 	/**
 	 *
 	 */
-    final public function dn_unset(string $name) {
-        eval('unset($this->__dotnotations["' . implode('"]["', explode('.', $name)) . '"]);');
+    final public function dn_unset(string $name, string ...$names) {
+    	foreach(func_get_args() as $name)
+        	eval('unset($this->__dotnotations["' . implode('"]["', explode('.', $name)) . '"]);');
     }
 
 	/**
