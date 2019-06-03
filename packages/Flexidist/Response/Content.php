@@ -59,6 +59,7 @@ class Content {
                     'attributes' => [
                         'prefix' => 'og:http://ogp.me/ns# fb:http://ogp.me/ns/fb# website:http://ogp.me/ns/website#',
                     ],
+                    'base_href' => SERVER_NAME . DOCUMENT_ROOT,
                     'title' => null,
                     'description' => null,
                     'content' => null,
