@@ -16,17 +16,6 @@ class Request {
     use \traits\dotnotation;
 
     public $Response = null;
-    protected $accept_methods = [
-        '*',
-        'GET',
-        'POST',
-        'PUT',
-        'UPDATE',
-        'DELETE',
-        'PATCH',
-        'OPTIONS',
-        'CONNECT',
-    ];
     protected $http_requests = [
         '*'         => [],
         'GET'       => [],
@@ -37,6 +26,7 @@ class Request {
         'PATCH'     => [],
         'OPTIONS'   => [],
         'CONNECT'   => [],
+        'TRACE'   => [],
     ];
 
     /**
@@ -84,11 +74,8 @@ class Request {
     *
     */
     public function map(string $methods, string $pattern, \Closure $callback): self {
-        $accept_methods = array_keys($this->http_requests);
-
         foreach(explode('|', $methods) as $method)
-            if (in_array($method = strtoupper($method), $accept_methods))
-                $this->http_requests[$method][$pattern] = $callback;
+        	$this->http_requests[strtoupper($method)][$pattern] = $callback;
  
         return $this;
     }
@@ -110,9 +97,7 @@ class Request {
     *
     */
     public function listen(?string $REQUEST_URI = null, ?string $REQUEST_METHOD = null, bool $execute = true): bool {
-        if (!in_array($REQUEST_METHOD = strtoupper($REQUEST_METHOD ?: $this->dn_get('attributes.REQUEST_METHOD')), array_keys($this->http_requests)))
-            return false;
-
+        $REQUEST_METHOD = strtoupper($REQUEST_METHOD) ?: $this->dn_get('attributes.REQUEST_METHOD');
         $REQUEST_URI = $REQUEST_URI ?: $this->dn_get('attributes.REQUEST_URI');
         $REQUEST_URIs = $REQUEST_URI ? explode('/', $REQUEST_URI) : $this->dn_get('attributes.REQUEST_URIs');
         

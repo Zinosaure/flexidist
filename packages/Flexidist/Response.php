@@ -46,7 +46,7 @@ class Response {
             foreach ($this->dn_get('cookies') as $name => $value)
                 header(sprintf('Set-Cookie: %s=%s', $name, $value), false, $status_code);
         }
-
+        
         return !$is_informational ? $this->Content->output($evaluate) : null;
     }
 }

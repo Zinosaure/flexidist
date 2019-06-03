@@ -79,7 +79,7 @@ class Content {
         if (isset(self::$branches[$name]))
             return self::$branches[$name];
 
-        return self::$branches[$name] = new self($template); 
+        return self::$branches[$name] = new self($template);
     }
 
     /**
@@ -171,8 +171,8 @@ class Content {
                             $template = str_replace($match[0], sprintf('<!-- %s(%s): The maximum limit to extend/import templates reached, aborting! -->', $match[1], $match[2]),  $template);
                         else if (($content = @file_get_contents(eval('return ' . $match[2] . ';'))) !== false)
                             $template = str_replace($match[0], $this->build($content, $match[2], -- $max_extends_limit),  $template);
-                        else 
-                            $template = str_replace($match[0], sprintf('<!-- %s(%s): failed to open stream, no such file found. -->', $match[1], $match[2]), $template);
+                        else
+                            $template = str_replace($match[0], sprintf('<!-- %s(%s): Failed to open stream, no such file found. -->', $match[1], $match[2]), $template);
                     }
 
                     echo $template;
@@ -186,9 +186,11 @@ class Content {
                             $template = str_replace($match[0], sprintf('<!-- <branch name="%s" template="%s" message="%s" /> -->', $match[1], $match[2], 'Attempt to branch the same template, aborting!'), $template);
                         else if ($max_extends_limit <= 0)
                             $template = str_replace($match[0], sprintf('<!-- <branch name="%s" template="%s" message="%s" /> -->', $match[1], $match[2], 'The maximum limit to branch templates reached, aborting!'), $template);
+                        else if (!($content = @file_get_contents(TEMPLATES_PATH . $match[2])) !== false)
+                        	$template = str_replace($match[0], sprintf('<!-- <branch name="%s" template="%s" message="%s" /> -->', $match[1], $match[2], 'Failed to open stream, no such file found.'), $template);
                         else {
-                            $template = str_replace($match[0], sprintf('<checkout name="%s" />', $match[1]), $template);
-                            self::$branches[$match[1]] = new self($this->build(@file_get_contents(TEMPLATES_PATH . $match[2]) ?? null, $match[2], -- $max_extends_limit));
+                        	$template = str_replace($match[0], sprintf('<checkout name="%s" />', $match[1]), $template);
+                            self::$branches[$match[1]] = new self($this->build($content, $match[2], -- $max_extends_limit));
                         }
                     }
 
@@ -215,7 +217,7 @@ class Content {
                     foreach ($matches as $i => $match)
                         if (isset(self::$branches[$match[1]]))
                             $template = str_replace($match[0], self::checkout($match[1])->format(), $template);
-                
+                            
                     echo $template;
 
                 return ob_get_clean();
@@ -323,7 +325,7 @@ class Content {
     *
     */
     public function output(bool $evaluate = true) {
-        echo $evaluate? $this->evaluate() : $this->format();
+    	echo $evaluate ? $this->evaluate() : $this->format();
     }
 }
 ?>
