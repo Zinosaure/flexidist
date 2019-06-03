@@ -212,7 +212,8 @@ class Content {
             '/<checkout\s+name="([a-z0-9_]*)"\s+\/>/isU' => function(string $template, array $matches): string {
                 ob_start();
                     foreach ($matches as $i => $match)
-                        $template = str_replace($match[0], self::checkout($match[1])->format(), $template);
+                        if (isset(self::$branches[$match[1]]))
+                            $template = str_replace($match[0], self::checkout($match[1])->format(), $template);
                 
                     echo $template;
 
@@ -304,13 +305,6 @@ class Content {
             $template = file_get_contents($template);
 
         $this->template .= $template;
-    }
-
-    /**
-    *
-    */
-    public function serialize(): string {
-        return json_encode(['template' => $this->template, 'variables' => $this->dn_get()], JSON_PRETTY_PRINT|JSON_NUMERIC_CHECK);
     }
     
     /**

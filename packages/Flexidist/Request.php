@@ -113,6 +113,7 @@ class Request {
         if (!in_array($REQUEST_METHOD = strtoupper($REQUEST_METHOD ?: $this->dn_get('attributes.REQUEST_METHOD')), array_keys($this->http_requests)))
             return false;
 
+        $REQUEST_URI = $REQUEST_URI ?: $this->dn_get('attributes.REQUEST_URI');
         $REQUEST_URIs = $REQUEST_URI ? explode('/', $REQUEST_URI) : $this->dn_get('attributes.REQUEST_URIs');
         
         foreach(array_replace($this->http_requests['*'], $this->http_requests[$REQUEST_METHOD]) as $pattern => $callback) {
