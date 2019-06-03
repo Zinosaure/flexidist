@@ -18,7 +18,7 @@ session_start();
 
 foreach([
 	'IS_LOCALHOST' =>
-		$is_localhost ?? false,
+		$is_localhost ?? in_array($_SERVER['SERVER_NAME'], ['localhost', '127.0.0.1']),
 	'IS_HTTPS' =>
 		isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off',
 	'IS_REQUEST_METHOD_AJAX' =>

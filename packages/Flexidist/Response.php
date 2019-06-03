@@ -1,13 +1,25 @@
 <?php
 
+/**
+*
+*/
 namespace Flexidist;
 
+/**
+*
+*/
 class Response {
 
+    /**
+    *
+    */
     use \traits\dotnotation;
     
     public $Content = null;
 
+    /**
+    *
+    */
     public function __construct(?\Flexidist\Response\Content &$Content = null, array $options = []) {
         $this->Content = $Content ?? new \Flexidist\Response\Content();
         $this->dn_init(array_replace_recursive([
@@ -20,6 +32,9 @@ class Response {
         ], $options));
     }
 
+    /**
+    *
+    */
     public function send(int $status_code = null, bool $is_informational = false, bool $evaluate = true) {
         $status_code = $status_code ?? $this->dn_get('status_code');
         http_response_code($status_code);

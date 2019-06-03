@@ -1,10 +1,20 @@
 <?php
 
+/**
+*
+*/
 namespace Flexidist;
 
+/**
+*
+*/
 class Request {
 
+    /**
+    *
+    */
     use \traits\dotnotation;
+
     public $Response = null;
     protected $accept_methods = [
         '*',
@@ -29,6 +39,9 @@ class Request {
         'CONNECT'   => [],
     ];
 
+    /**
+    *
+    */
     public function __construct(Response &$Response = null) {
         ($session_started = session_status() != PHP_SESSION_NONE) ? null : session_start();
 
@@ -40,12 +53,18 @@ class Request {
             'cookie' => $_COOKIE,
             'session' => $session_started ? $_SESSION : [],
             'attributes' => [
-                'full_request' => $full = explode('/', trim(preg_replace('/\?(.*)?/is', null, $_SERVER['REQUEST_URI']), '/')),
-                'request' => array_splice($full, count(explode('/', dirname($_SERVER['SCRIPT_NAME']))) - 2)
+                'REQUEST_METHOD' => strtoupper($_SERVER['REQUEST_METHOD']),
+                'DOCUMENT_ROOT' => DOCUMENT_ROOT,
+                'REQUEST_URI' => REQUEST_URI,
+                'REQUEST_QUERY_URI' => REQUEST_QUERY_URI,
+                'REQUEST_URIs' => explode('/', REQUEST_URI),
             ],
         ]);
     }
 
+    /**
+    *
+    */
     public static function send(string $request_uri, array $options = []) {
         return @file_get_contents($request_uri, false, stream_context_create(array_replace_recursive([
             'http' => [
@@ -54,33 +73,56 @@ class Request {
         ], $options)));
     }
 
+    /**
+    *
+    */
     public static function redirectTo(string $url, int $status_code = 301) {
         exit(header('Location: ' . $url, false, $status_code));
     }
 
+    /**
+    *
+    */
     public function map(string $methods, string $pattern, \Closure $callback): self {
+        $accept_methods = array_keys($this->http_requests);
+
         foreach(explode('|', $methods) as $method)
-            if (in_array($method = strtoupper($method), $this->accept_methods))
+            if (in_array($method = strtoupper($method), $accept_methods))
                 $this->http_requests[$method][$pattern] = $callback;
  
         return $this;
     }
 
-    public function listen(?string $request_url = null, ?string $method = null, bool $execute = true): bool {
-        if (!in_array($method = strtoupper($method ?: $this->dn_get('server.REQUEST_METHOD')), $this->accept_methods))
+    /**
+    *
+    */
+    public function execute(\Closure $callback, array $args = []) {
+        $callback = \Closure::bind($callback, $this, get_class());
+
+        foreach ((new \ReflectionFunction($callback))->getParameters() as $param)
+            if (($param_type = $param->getType()) && !in_array($class_name = $param_type->getName(), ['int', 'string']))
+                $args[$param->getName()] = new $class_name($args[$param->getName()]);
+ 
+        return call_user_func_array($callback, $args) || true;
+    }
+
+    /**
+    *
+    */
+    public function listen(?string $REQUEST_URI = null, ?string $REQUEST_METHOD = null, bool $execute = true): bool {
+        if (!in_array($REQUEST_METHOD = strtoupper($REQUEST_METHOD ?: $this->dn_get('attributes.REQUEST_METHOD')), array_keys($this->http_requests)))
             return false;
 
-        $attr_requests = $request_url ? explode('/', $request_url) : $this->dn_get('attributes.request');
-        $request_url = implode('/', $attr_requests);
+        $REQUEST_URIs = $REQUEST_URI ? explode('/', $REQUEST_URI) : $this->dn_get('attributes.REQUEST_URIs');
         
-        foreach(array_replace($this->http_requests['*'], $this->http_requests[$method]) as $pattern => $callback) {
+        foreach(array_replace($this->http_requests['*'], $this->http_requests[$REQUEST_METHOD]) as $pattern => $callback) {
             $args = [];
             $is_matched = true;
             $is_no_limit = false;
  
-            if ($request_url == $pattern
+            if ($REQUEST_URI == $pattern
                 || (preg_match('/^\/.+\/[a-z]*$/i', $pattern)
-                        && preg_match($pattern, $request_url, $args)))
+                        && preg_match($pattern, $REQUEST_URI, $args)))
                 return $execute ? $this->execute($callback, $args) : true;
  
             foreach(array_map(
@@ -91,7 +133,7 @@ class Request {
                         ? ['is_required' => $match[1] != '?', 'var_type' => $match[2], 'var_name' => $match[3], 'value' => null]
                             : ['is_required' => true, 'var_type' => null, 'var_name' => $value, 'value' => $value];
                 }, explode('/', $pattern)) as $i => $options) {
-                    $value = $attr_requests[$i] ?? null;
+                    $value = $REQUEST_URIs[$i] ?? null;
  
                     if ($options['is_required']) {
                         if (!($is_matched = !is_null($value)))
@@ -102,7 +144,7 @@ class Request {
                         continue;
  
                     if ($is_no_limit = (strtolower($options['var_type']) == '*'))
-                        $value = implode('/', array_slice($attr_requests, $i));
+                        $value = implode('/', array_slice($REQUEST_URIs, $i));
                     else if (strtolower($options['var_type']) == 'string' && !($is_matched = is_string($value)))
                         break;
                     else if (strtolower($options['var_type']) == 'int' && !($is_matched = is_numeric($value)))
@@ -112,21 +154,11 @@ class Request {
                         $args[$options['var_name']] = $value;
             }
  
-            if ($is_matched && !(!$is_no_limit && substr_count($request_url, '/') > substr_count($pattern, '/')))
+            if ($is_matched && !(!$is_no_limit && substr_count($REQUEST_URI, '/') > substr_count($pattern, '/')))
                 return $execute ? $this->execute($callback, $args) : true;
         }
 
         return false;
-    }
-
-    public function execute(\Closure $callback, array $args = []) {
-        $callback = \Closure::bind($callback, $this, get_class());
-
-        foreach ((new \ReflectionFunction($callback))->getParameters() as $param)
-            if (($param_type = $param->getType()) && !in_array($class_name = $param_type->getName(), ['int', 'string']))
-                $args[$param->getName()] = new $class_name($args[$param->getName()]);
- 
-        return call_user_func_array($callback, $args) || true;
     }
 }
 ?>
