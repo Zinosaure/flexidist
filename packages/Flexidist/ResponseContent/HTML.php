@@ -103,7 +103,7 @@ class HTML {
             $document = file_get_contents(TEMPLATES_PATH . $document);
             
         $this->document = $this->init($document);
-        $this->dn_init(array_replace_recursive($this->dn_get(), $vars));
+        $this->dn_init($vars);
     }
 
     /**
@@ -111,6 +111,12 @@ class HTML {
     */
     public function init(string $document, ?string $source_filename = null, int $extends_limit = 25): string {
         $patterns = [
+            '/{%\s+(include|include_once|require|require_once)\s*\("(.+)"\)\s+%}/isU' => function(string $document, array $matches): string {
+                foreach ($matches as $i => $match)
+                    $document = str_replace($match[0], eval(sprintf('%s("%s");', $match[1], TEMPLATES_PATH . $match[2])), $document);
+
+                return $document;
+            },
             '/{%\s+extends\s*"(.+)"\s+%}/isU' => function(string $document, array $matches) use ($source_filename, $extends_limit): string {
                 foreach ($matches as $i => $match) {
                     if ($match[1] == $source_filename)
@@ -143,36 +149,12 @@ class HTML {
             $variables = [];
             $double_quote_opened = false;
             $keywords = [
-                '&&' => ' && ',
-                '||' => ' || ',
-                '&' => ' && ',
-                '|' => ' || ',
-                ',' => ', ',
-                '(' => '(',
-                ')' => ')',
-                '!' => '!',
-                '::' => '::',
-                '?' => ' ?',
-                ':' => ': ',
-                '==' => ' == ',
-                '===' => ' === ',
-                '!=' => ' != ',
-                '!==' => ' !== ',
-                '>=' => ' >= ',
-                '<=' => ' <= ',
-                '<>' => ' <> ',
-                '>' => '>',
-                '<' => '<',
-                '=' => ' = ',
-                '%' => ' % ',
-                '*' => ' * ',
-                '/' => ' / ',
-                '+' => ' + ',
-                '-' => ' - ',
+                '&&', '||', ',', ';', '(', ')', '!', '?', ':', '===', '==', '=', 
+                '!==', '!=', '>=', '<=', '<>', '>', '<','%', '*', '^', '/', '+', '-',
+                'return', 'break', 'continue',
             ];
-            $keywords_keys = array_keys($keywords);
         
-            foreach (preg_split('/\s*(&&|\|\||&|\||,|\)|\(|={1,3}|!={1,2}|>=|<=|<>|>|<|!|\?|:{1,2}|%|\*|\/|\-|\+)\s*/is', $expression, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY) as $i => $match) {
+            foreach (preg_split('/\s*(' . str_replace('~', '|', preg_quote(implode('~', $keywords), '/')) . ')\s*/is', $expression, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY) as $i => $match) {
                 if ($double_quote_opened || $double_quote_opened = preg_match('/^"/isU', $match))
                     $variables[$i] = $match;
         
@@ -180,7 +162,7 @@ class HTML {
                     $double_quote_opened = false;
                     
                 if (!($match = trim($match))
-                    || (in_array($match, $keywords_keys) && $match = $keywords[$match])
+                    || (in_array($match, $keywords))
                     || is_numeric($match)
                     || function_exists($match)
                     || defined($match)
@@ -200,15 +182,6 @@ class HTML {
         };
 
         $patterns = [
-            '/{%\s+(include|include_once|require|require_once)\s*\((.+)\)\s+%}/isU' => function(string $document, array $matches) use ($interpolation): string {
-                ob_start();
-                    foreach ($matches as $i => $match)
-                        $document = str_replace($match[0], sprintf('<?php %s(%s) ?>', $match[1], $interpolation($match[2])), $document);
-
-                    echo $document;
-
-                return ob_get_clean();
-            },
             '/\{%\s+(end|endfor|endif|close)\s+%\}/isU' => function(string $document, array $matches) use ($interpolation): string {
                 foreach ($matches as $i => $match)
                     $document = str_replace($match[0], '<?php } ?>', $document);
@@ -269,7 +242,7 @@ class HTML {
     /**
     *
     */
-    public function execute(bool $translate = true, bool $evalutate = true): string {
+    public function execute(bool $translate = true, bool $evalutate = false): string {
         ob_start();
             $document = $translate ? $this->translate() : $this->document;
 

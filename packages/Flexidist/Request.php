@@ -36,7 +36,6 @@ class Request {
         ($session_started = session_status() != PHP_SESSION_NONE) ? null : session_start();
 
         $this->Response = $Response ?? new Response($Content);
-
         $this->dn_init([
             'server' => $_SERVER,
             'arg' => $_GET,
@@ -56,7 +55,7 @@ class Request {
     /**
     *
     */
-    public static function fetch(string $request_uri, array $options = []) {
+    public static function send(string $request_uri, array $options = []) {
         return @file_get_contents($request_uri, false, stream_context_create(array_replace_recursive([
             'http' => [
                 'method' => 'GET',
@@ -146,13 +145,6 @@ class Request {
         }
 
         return false;
-    }
-
-    /**
-    *
-    */
-    public function send(int $status_code = null) {
-        $this->Response->send($status_code);
     }
 }
 ?>
