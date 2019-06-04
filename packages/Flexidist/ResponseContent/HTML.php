@@ -153,8 +153,9 @@ class HTML {
                 '!==', '!=', '>=', '<=', '<>', '>', '<','%', '*', '^', '/', '+', '-',
                 'return', 'break', 'continue',
             ];
+            $pattern = '/\s*(' . str_replace('`', '|', preg_quote(implode('`', $keywords), '/')) . ')\s*/is';
         
-            foreach (preg_split('/\s*(' . str_replace('~', '|', preg_quote(implode('~', $keywords), '/')) . ')\s*/is', $expression, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY) as $i => $match) {
+            foreach (preg_split($pattern, $expression, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY) as $i => $match) {
                 if ($double_quote_opened || $double_quote_opened = preg_match('/^"/isU', $match))
                     $variables[$i] = $match;
         
