@@ -15,7 +15,6 @@ class Request {
     */
     use \traits\dotnotation;
 
-    public $Response = null;
     protected $http_requests = [
         '*'         => [],
         'GET'       => [],
@@ -28,14 +27,16 @@ class Request {
         'CONNECT'   => [],
         'TRACE'   => [],
     ];
+    protected $Response = null;
 
     /**
     *
     */
-    public function __construct(Response &$Response = null) {
+    public function __construct($Content = null, ?Response $Response = null) {
         ($session_started = session_status() != PHP_SESSION_NONE) ? null : session_start();
 
-        $this->Response = $Response ?? new Response();
+        $this->Response = $Response ?? new Response($Content);
+
         $this->dn_init([
             'server' => $_SERVER,
             'arg' => $_GET,
@@ -55,7 +56,7 @@ class Request {
     /**
     *
     */
-    public static function send(string $request_uri, array $options = []) {
+    public static function fetch(string $request_uri, array $options = []) {
         return @file_get_contents($request_uri, false, stream_context_create(array_replace_recursive([
             'http' => [
                 'method' => 'GET',
@@ -75,7 +76,7 @@ class Request {
     */
     public function map(string $methods, string $pattern, \Closure $callback): self {
         foreach(explode('|', $methods) as $method)
-        	$this->http_requests[strtoupper($method)][$pattern] = $callback;
+        	$this->http_requests[strtoupper(trim($method))][$pattern] = $callback;
  
         return $this;
     }
@@ -145,6 +146,13 @@ class Request {
         }
 
         return false;
+    }
+
+    /**
+    *
+    */
+    public function send(int $status_code = null) {
+        $this->Response->send($status_code);
     }
 }
 ?>
