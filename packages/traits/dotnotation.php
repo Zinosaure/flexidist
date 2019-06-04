@@ -37,14 +37,14 @@ trait dotnotation {
 	/**
 	 *
 	 */
-    final public function dn_set(string $name, $mixed_value, bool $trans_type = false) {
-        eval('
-            $attribute = &$this->__dotnotations["' . implode('"]["', explode('.', $name)) . '"];
-            $attribute = !is_null($attribute) ? $attribute : $mixed_value;
+    final public function dn_set(string $name, $mixed_value, bool $transtype = false, bool $throw_exception = true) {
+        eval('$attribute = &$this->__dotnotations["' . implode('"]["', explode('.', $name)) . '"];');
+        $attribute = !is_null($attribute) ? $attribute : $mixed_value;
             
-            if ($trans_type || is_null($attribute) || gettype($attribute) == gettype($mixed_value))
-                $attribute = $mixed_value;
-        ');
+        if ($transtype || is_null($attribute) || gettype($attribute) == gettype($mixed_value))
+            $attribute = $mixed_value;
+        else if ($throw_exception)
+            throw new \UnexpectedValueException(sprintf('The dotnotation (%s) value must be a `%s`, `%s` given.', $name, gettype($attribute), gettype($mixed_value)));
 
         return $this;
     }
