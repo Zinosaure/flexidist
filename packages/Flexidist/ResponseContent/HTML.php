@@ -243,7 +243,7 @@ class HTML {
     /**
     *
     */
-    public function execute(bool $translate = true, bool $evalutate = false): string {
+    public function execute(bool $translate = true, bool $evalutate = true): string {
         ob_start();
             $document = $translate ? $this->translate() : $this->document;
 
