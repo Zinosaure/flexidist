@@ -116,13 +116,14 @@ class Response {
     /**
     *
     */
-    public function setContent($content): self {
+    public function setContent($content) {
         if (!is_null($content) && !is_string($content) && !is_numeric($content) && !is_callable([$content, '__toString']))
             throw new \UnexpectedValueException(sprintf('The Flexidist\Response::Content must be a string or object implementing __toString(), "%s" given.', gettype($content)));
 
-        $this->Content = $content;
+        if (!is_null($content) && preg_match('/\.phtml$/isU', $content) && is_file(TEMPLATES_PATH . $content))
+            $content = file_get_contents(TEMPLATES_PATH . $content);
 
-        return $this;
+        $this->Content = $content;
     }
 
     /**
