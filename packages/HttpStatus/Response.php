@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace FlexiHTTP;
+namespace HttpStatus;
 
 /**
 *
@@ -118,7 +118,7 @@ class Response {
     */
     public function setContent($content) {
         if (!is_null($content) && !is_string($content) && !is_numeric($content) && !is_callable([$content, '__toString']))
-            throw new \UnexpectedValueException(sprintf('The FlexiHTTP\Response::Content must be a string or object implementing __toString(), "%s" given.', gettype($content)));
+            throw new \UnexpectedValueException(sprintf('The %s::Content must be a string or object implementing __toString(), "%s" given.', get_called_class(), gettype($content)));
 
         if (!is_null($content) && preg_match('/\.phtml$/isU', $content) && is_file(TEMPLATES_PATH . $content))
             $content = file_get_contents(TEMPLATES_PATH . $content);
