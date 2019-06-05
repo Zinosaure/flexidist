@@ -20,8 +20,27 @@ abstract class Repository {
     */
     final public function __construct(array $data, Schema $Schema) {
         $this->data = array_map(function($value) use ($Schema) {
-            return (clone $Schema)->bind($value);
+        	$self = clone $Schema;
+        	
+        	foreach ($Schema::bind($value) as $field => $value)
+		        $self->{$field} = $value;
+		        
+		    return $self;
         }, $data);
+    }
+    
+    /**
+    *
+    */
+	public function __toString(): string {
+    	return $this->stringify();
+    }
+    
+    /**
+    *
+    */
+	final public function stringify(): string {
+    	return json_encode($this->data, JSON_PRETTY_PRINT|JSON_NUMERIC_CHECK);
     }
 
     /**
@@ -67,7 +86,7 @@ abstract class Repository {
     }
 
     /**
-     * 
+     *
      */
      public function getPagination(int $current_offset, int $rows_per_page = 15, int $length = 10): array {
         $num_of_pages = ceil($this->file_count / $rows_per_page);
