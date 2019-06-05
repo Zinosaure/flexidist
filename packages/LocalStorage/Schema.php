@@ -46,12 +46,19 @@ abstract class Schema {
                 else if (isset($data[$field]))
                     $data_validated[$field] = $sField($data[$field]) ? $data[$field] : null;
                 else 
-                    $data_validated[$field] = null;
+                    $data_validated[$field] = $sField == 'is_array' ? [] : null;
             } else if (isset($validate_schema[$field]))
                 $data_validated[$field] = null;
         }
 
         return $data_validated;
+    }
+
+    /**
+    *
+    */
+    final public static function getSchemaValidateType() {
+        return 'd';
     }
 }
 ?>
