@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace Flexidist;
+namespace FlexiHTTP;
 
 /**
 *

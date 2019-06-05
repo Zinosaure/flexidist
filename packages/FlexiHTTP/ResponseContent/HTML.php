@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace Flexidist\ResponseContent;
+namespace FlexiHTTP\ResponseContent;
 
 /**
 *
