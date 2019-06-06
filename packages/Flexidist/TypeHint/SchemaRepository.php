@@ -20,12 +20,7 @@ abstract class SchemaRepository {
     */
     final public function __construct(array $data, Schema $Schema) {
         $this->data = array_map(function($value) use ($Schema) {
-        	$clone_Schema = clone $Schema;
-        	
-        	foreach ($Schema::bind($value) as $field => $value)
-		        $clone_Schema->{$field} = $value;
-		        
-		    return $clone_Schema;
+            return $Schema::create($value);
         }, $data);
     }
     
