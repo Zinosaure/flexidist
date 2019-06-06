@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace HttpStatus\ResponseContent;
+namespace Flexidist\HTTP\ResponseContent;
 
 /**
 *

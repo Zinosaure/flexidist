@@ -3,12 +3,12 @@
 /**
 *
 */
-namespace LocalStorage;
+namespace Flexidist\TypeHint;
 
 /**
 *
 */
-abstract class Repository {
+abstract class SchemaRepository {
 
     /**
     *
@@ -20,12 +20,12 @@ abstract class Repository {
     */
     final public function __construct(array $data, Schema $Schema) {
         $this->data = array_map(function($value) use ($Schema) {
-        	$self = clone $Schema;
+        	$clone_Schema = clone $Schema;
         	
         	foreach ($Schema::bind($value) as $field => $value)
-		        $self->{$field} = $value;
+		        $clone_Schema->{$field} = $value;
 		        
-		    return $self;
+		    return $clone_Schema;
         }, $data);
     }
     
@@ -46,49 +46,49 @@ abstract class Repository {
     /**
     *
     */
-    final public static function load(string $filename, Schema $Schema): self {
+    public static function load(string $filename, Schema $Schema): self {
         return new static((array) json_decode(@file_get_contents($filename), JSON_OBJECT_AS_ARRAY), $Schema);
     }
 
     /**
     *
     */
-    public function insert(array $data): bool {
+    final public function insert(Schema ...$Schema): bool {
 
     }
 
     /**
     *
     */
-    public function update(array $data): bool {
+    final public function update(Schema ...$Schema): bool {
 
     }
 
     /**
     *
     */
-    public function delete(array $data): bool {
+    final public function delete(Schema ...$Schema): bool {
 
     }
 
     /**
     *
     */
-    public function count(): int {
+    final public function count(): int {
         return count($this->data);
     }
 
     /**
     *
     */
-    public function save(): bool {
+    final public function save(): bool {
 
     }
 
     /**
      *
      */
-     public function getPagination(int $current_offset, int $rows_per_page = 15, int $length = 10): array {
+    final public function getPagination(int $current_offset, int $rows_per_page = 15, int $length = 10): array {
         $num_of_pages = ceil($this->file_count / $rows_per_page);
         $current_page = ceil(($current_offset + 1) / $rows_per_page);
         $middle_index = floor($length / 2);

@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace HttpStatus;
+namespace Flexidist\HTTP;
 
 /**
 *
