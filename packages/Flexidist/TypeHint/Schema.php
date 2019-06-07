@@ -19,7 +19,10 @@ abstract class Schema {
     const SCHEMA_VALIDATE_INTEGER = 'is_int';
     const SCHEMA_VALIDATE_BOOLEAN = 'is_bool';
     const SCHEMA_VALIDATE_LIST = 'is_array';
+
     const VALIDATE_SCHEMA = [];
+    const SCHEMA_PRIMARY_KEY = null;
+    const SCHEMA_INDEX_KEYS = [];
 
     protected $vars = [];
 
@@ -32,11 +35,11 @@ abstract class Schema {
                 continue;
 
             if (class_exists($sField = $validate_schema[$field]))
-                $this->vars[$field] = ($object = new $sField($data[$field] ?? [])) instanceOf self ? $object : null;
+                $this->{$field} = ($object = new $sField((array) ($data[$field] ?? []))) instanceOf self ? $object : null;
             else if ($sField == self::SCHEMA_VALIDATE_LIST)
-                $this->vars[$field] = $data[$field] ?? [];
+                $this->{$field} = array_values($data[$field] ?? []);
             else
-                $this->vars[$field] = $data[$field] ?? null; 
+                $this->{$field} = $data[$field] ?? null; 
         }
     }
 
@@ -55,7 +58,7 @@ abstract class Schema {
             return;
         
         $callback = static::VALIDATE_SCHEMA[$name];
-        $attribute = $this->vars[$name];
+        $attribute = $this->vars[$name] ?? null;
         
         if (is_null($attribute) 
             && !is_null($mixed_value) 
@@ -73,13 +76,15 @@ abstract class Schema {
             )
         )
             $this->vars[$name] = $mixed_value;
+        else 
+            $this->vars[$name] = null;
     }
     
     /**
     *
     */
     final public function __toString(): string {
-        return $this->stringify();
+        return json_encode($this->export(), JSON_PRETTY_PRINT|JSON_NUMERIC_CHECK);
     }
 
     /**
@@ -88,19 +93,46 @@ abstract class Schema {
     final public static function create(array $data = [], array $validate_schema = []): self {
         return new static($data, $validate_schema);
     }
-    
+
     /**
     *
     */
-    final public static function getSchemaValidateType($data) {
-    	return new static($data);
+    final public function ID() {
+        if (static::SCHEMA_PRIMARY_KEY)
+            return $this->{static::SCHEMA_PRIMARY_KEY};
+        
+        return null;
+    }
+
+    /**
+    *
+    */
+    final public function indexation(array &$indexes = []) {
+        $return_indexes = [];
+
+        foreach (static::SCHEMA_INDEX_KEYS as $name) {
+            if (!isset(static::VALIDATE_SCHEMA[$name]))
+                continue;
+
+            if ($this->{$name} instanceOf self)
+                $indexes[$name][$this->ID()] = $this->{$name}->indexation();
+            else
+                $indexes[$name][$this->ID()] = $return_indexes[$this->ID()][$name] = $this->{$name};
+        }
+
+        return $return_indexes;
     }
     
     /**
     *
     */
-    public function stringify(): string {
-        return json_encode($this->vars, JSON_PRETTY_PRINT|JSON_NUMERIC_CHECK);
+    final public function export(): array {
+        $export_data = [];
+
+        foreach ($this->vars as $field => $value)
+            $export_data[$field] = ($value instanceOf self) ? $value->export() : $value;
+
+        return $export_data;
     }
 }
 ?>

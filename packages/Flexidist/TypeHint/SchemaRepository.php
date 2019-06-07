@@ -13,72 +13,108 @@ abstract class SchemaRepository {
     /**
     *
     */
-    protected $data = [];
+    private $Schema = null;
+    private $Schema_name = null;
+    private $data_path = null;
+    private $glob_pattern = '*.json';
+    private $cache_data = [];
+
+    private $metadata_filename = null;
+    public static $metadata = [];
 
     /**
     *
     */
-    final public function __construct(array $data, Schema $Schema) {
-        $this->data = array_map(function($value) use ($Schema) {
-            return $Schema::create($value);
-        }, $data);
+    final public function __construct(Schema $Schema, string $data_path = '.', string $glob_pattern = '*.json') {
+        $this->Schema = $Schema;
+        $this->Schema_name = get_called_class();
+        $this->data_path = $data_path;
+        $this->glob_pattern = $glob_pattern;
+        self::$metadata[$this->Schema_name] = ['IDs' => [], 'indexation' => [], 'count_file' => 0];
+
+        if ($is_indexed = file_exists($this->metadata_filename = sprintf('%s/_%s', $data_path, md5($this->Schema_name))))
+            self::$metadata[$this->Schema_name] = json_decode(file_get_contents($this->metadata_filename), JSON_OBJECT_AS_ARRAY);
+        
+        $count_file = count(glob(sprintf('%s/%s', $data_path, $glob_pattern)));
+
+        if (!$is_indexed || $count_file != self::$metadata[$this->Schema_name]['count_file'])
+            $this->performIndexation();
     }
     
     /**
     *
     */
-	public function __toString(): string {
-    	return $this->stringify();
-    }
-    
-    /**
-    *
-    */
-	final public function stringify(): string {
-    	return json_encode($this->data, JSON_PRETTY_PRINT|JSON_NUMERIC_CHECK);
+	final public function __toString(): string {
+    	return json_encode($this->export(), JSON_PRETTY_PRINT|JSON_NUMERIC_CHECK);
     }
 
     /**
     *
     */
-    public static function load(string $filename, Schema $Schema): self {
-        return new static((array) json_decode(@file_get_contents($filename), JSON_OBJECT_AS_ARRAY), $Schema);
+	final public function performIndexation(): bool {
+        foreach (glob(sprintf('%s/%s', $this->data_path, $this->glob_pattern)) as $filename)
+            $this->append($filename);
+
+        return (bool) file_put_contents($this->metadata_filename, json_encode(self::$metadata[$this->Schema_name], JSON_PRETTY_PRINT|JSON_NUMERIC_CHECK));
     }
 
     /**
     *
     */
-    final public function insert(Schema ...$Schema): bool {
+    final public function append(string $filename): bool {
+        if (!file_exists($filename) || in_array($basename = basename($filename), self::$metadata[$this->Schema_name]['IDs']))
+            return false;
 
+        if ($this->Schema::SCHEMA_PRIMARY_KEY) {
+            $Schema = $this->Schema::create((array) @json_decode(file_get_contents($filename), JSON_OBJECT_AS_ARRAY));
+            self::$metadata[$this->Schema_name]['IDs'][$Schema->ID()] = $basename;
+            
+            if ($this->Schema::SCHEMA_INDEX_KEYS)
+                $Schema->indexation(self::$metadata[$this->Schema_name]['indexation']);
+        } else
+            self::$metadata[$this->Schema_name]['IDs'][] = $basename;
+
+        self::$metadata[$this->Schema_name]['count_file'] ++;
+
+        return true;
     }
 
     /**
     *
     */
-    final public function update(Schema ...$Schema): bool {
+    final public function update($ID, string $index_name, $mixed_value): bool {
+        if (!isset(self::$metadata[$this->Schema_name]['indexation'][$index_name], self::$metadata[$this->Schema_name]['indexation'][$index_name][$ID]))
+            return false;
 
+        self::$metadata[$this->Schema_name]['indexation'][$index_name][$ID] = $mixed_value;
+        
+        return true;
     }
 
     /**
     *
     */
-    final public function delete(Schema ...$Schema): bool {
+    final public function delete($ID): bool {
+        if (!isset(self::$metadata[$this->Schema_name]['IDs'][$ID]))
+            return false;
 
+        foreach (self::$metadata[$this->Schema_name]['indexation'] as $index_name => $value) {
+            if (isset(self::$metadata[$this->Schema_name]['indexation'][$index_name][$ID]))
+                unset(self::$metadata[$this->Schema_name]['indexation'][$index_name][$ID]);
+        }
+
+        unset(self::$metadata[$this->Schema_name]['IDs'][$ID]);
+        self::$metadata[$this->Schema_name]['count_file'] = count(self::$metadata[$this->Schema_name]['IDs']);
+
+        return true;
     }
 
     /**
     *
     */
-    final public function count(): int {
-        return count($this->data);
-    }
+    final public function search(string $name) {
 
-    /**
-    *
-    */
-    final public function save(): bool {
-
-    }
+    } 
 
     /**
      *
