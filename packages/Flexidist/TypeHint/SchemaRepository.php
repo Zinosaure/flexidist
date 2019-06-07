@@ -67,10 +67,19 @@ abstract class SchemaRepository {
 
         if ($this->Schema::SCHEMA_PRIMARY_KEY) {
             $Schema = $this->Schema::create((array) @json_decode(file_get_contents($filename), JSON_OBJECT_AS_ARRAY));
-            self::$metadata[$this->Schema_name]['IDs'][$Schema->ID()] = $basename;
+            self::$metadata[$this->Schema_name]['IDs'][$ID = $Schema->ID()] = $basename;
             
-            if ($this->Schema::SCHEMA_INDEX_KEYS)
-                $Schema->indexation(self::$metadata[$this->Schema_name]['indexation']);
+            if ($this->Schema::SCHEMA_INDEX_KEYS) {
+                foreach ($this->Schema::SCHEMA_INDEX_KEYS as $name) {
+                    if (!isset($this->Schema::VALIDATE_SCHEMA[$name]))
+                        continue;
+        
+                    if ($Schema->{$name} instanceOf Schema)
+                        self::$metadata[$this->Schema_name]['indexation'][$name][$ID] = $Schema->{$name}->exportIndexation();
+                    else
+                        self::$metadata[$this->Schema_name]['indexation'][$name][$ID] = $Schema->{$name};
+                }
+            }
         } else
             self::$metadata[$this->Schema_name]['IDs'][] = $basename;
 
@@ -82,13 +91,19 @@ abstract class SchemaRepository {
     /**
     *
     */
-    final public function update($ID, string $index_name, $mixed_value): bool {
+    final public function update(string $index_name, $ID, $mixed_value): bool {
         if (!isset(self::$metadata[$this->Schema_name]['indexation'][$index_name], self::$metadata[$this->Schema_name]['indexation'][$index_name][$ID]))
             return false;
 
-        self::$metadata[$this->Schema_name]['indexation'][$index_name][$ID] = $mixed_value;
+        $callback = $this->Schema::VALIDATE_SCHEMA[$index_name];
+        $attribute = self::$metadata[$this->Schema_name]['indexation'][$index_name][$ID] ?? null;
+
+        if (is_null($mixed_value) 
+            || (class_exists($callback) && ($Schema = new $callback()) instanceOf Schema && is_a($mixed_value, get_class($Schema)) && $mixed_value = $mixed_value->exportIndexation())
+            || (is_callable($callback) && $callback($mixed_value)))
+            return (bool) self::$metadata[$this->Schema_name]['indexation'][$index_name][$ID] = $mixed_value;
         
-        return true;
+        return false;
     }
 
     /**
@@ -113,7 +128,21 @@ abstract class SchemaRepository {
     *
     */
     final public function search(string $name) {
+        $return_value = $this->data;
 
+        if (empty($name))
+            return null;
+
+        foreach (explode('.', strtolower($name)) as $key) {
+            if (is_array($return_value) && array_key_exists($key, $return_value))
+                $return_value = $return_value[$key];
+            else if (is_object($return_value) && property_exists($return_value, $key))
+                $return_value = $return_value->{$key};
+            else
+                return null;
+        }
+
+        return $return_value;
     } 
 
     /**

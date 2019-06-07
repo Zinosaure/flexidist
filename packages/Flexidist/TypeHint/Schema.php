@@ -107,20 +107,14 @@ abstract class Schema {
     /**
     *
     */
-    final public function indexation(array &$indexes = []) {
-        $return_indexes = [];
+    final public function exportIndexation() {
+        $export_data = [];
 
-        foreach (static::SCHEMA_INDEX_KEYS as $name) {
-            if (!isset(static::VALIDATE_SCHEMA[$name]))
-                continue;
+        foreach ($this->vars as $field => $value)
+            if (in_array($field, static::SCHEMA_INDEX_KEYS))
+                $export_data[$field] = ($value instanceOf self) ? $value->exportIndexation() : $value;
 
-            if ($this->{$name} instanceOf self)
-                $indexes[$name][$this->ID()] = $this->{$name}->indexation();
-            else
-                $indexes[$name][$this->ID()] = $return_indexes[$this->ID()][$name] = $this->{$name};
-        }
-
-        return $return_indexes;
+        return $export_data;
     }
     
     /**
