@@ -3,12 +3,12 @@
 /**
 *
 */
-namespace Flexidist\TypeHint;
+namespace Flexidist\Server\Schema;
 
 /**
 *
 */
-abstract class Schema {
+abstract class JSON {
 
     /**
     *
@@ -107,12 +107,15 @@ abstract class Schema {
     /**
     *
     */
-    final public function exportIndexation() {
+    final public function exportIndexes($ID, string $filename): array {
         $export_data = [];
 
-        foreach ($this->vars as $field => $value)
-            if (in_array($field, static::SCHEMA_INDEX_KEYS))
-                $export_data[$field] = ($value instanceOf self) ? $value->exportIndexation() : $value;
+        foreach (static::SCHEMA_INDEX_KEYS as $i => $name) {
+            if ($this->{$name} instanceOf self)
+                $export_data[$name] = $this->{$name}->exportIndexes($ID, $filename);
+            else
+                $export_data[$name][$this->{$name}][$ID] = $filename;
+        }
 
         return $export_data;
     }
