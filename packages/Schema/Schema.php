@@ -23,7 +23,8 @@ class Schema {
     const SCHEMA_VALIDATE_IS_BOOLEAN = 'is_bool';
     const SCHEMA_VALIDATE_IS_LIST = 'is_array';
     const SCHEMA_VALIDATE_IS_OBJECT = 'is_object';
-    const SCHEMA_VALIDATE_IS_SCHEMA_OBJECT = 'is_schema';
+    const SCHEMA_VALIDATE_IS_SCHEMA = 'is_schema';
+    const SCHEMA_VALIDATE_IS_SCHEMA_DATA = 'is_schema_data';
     const SCHEMA_VALIDATE_IS_LIST_OF = 'is_list_of:';
     const SCHEMA_VALIDATE_IS_OBJECT_OF = 'is_object_of:';
 
@@ -49,8 +50,10 @@ class Schema {
                 $this->__attributes[$field] = $value;
             else if ($is === self::SCHEMA_VALIDATE_IS_OBJECT && is_object($value = $data[$field] ?? (object) []))
                 $this->__attributes[$field] = $value;
-            else if ($is === self::SCHEMA_VALIDATE_IS_SCHEMA_OBJECT && is_object($value = $data[$field] ?? (object) []) && $value instanceOf self)
+            else if ($is === self::SCHEMA_VALIDATE_IS_SCHEMA && is_object($value = $data[$field] ?? (object) []) && $value instanceOf self)
                 $this->__attributes[$field] = $value;
+            else if ($is === self::SCHEMA_VALIDATE_IS_SCHEMA_DATA && is_array($value = $data[$field] ?? []))
+                $this->__attributes[$field] = new self(... array_values($value));
             else if (strpos($is, self::SCHEMA_VALIDATE_IS_LIST_OF) !== false && $class_name = str_replace(self::SCHEMA_VALIDATE_IS_LIST_OF, null, $is))
                 $this->__attributes[$field] = new ListOf($class_name, is_array($data[$field]) ? $data[$field] : []);
             else if (strpos($is, self::SCHEMA_VALIDATE_IS_OBJECT_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_VALIDATE_IS_OBJECT_OF, null, $is))
@@ -87,8 +90,10 @@ class Schema {
             $this->__attributes[$field] = $value;
         else if ($is === self::SCHEMA_VALIDATE_IS_OBJECT && is_object($value = $mixed_value ?? (object) []))
             $this->__attributes[$field] = $value;
-        else if ($is === self::SCHEMA_VALIDATE_IS_SCHEMA_OBJECT && is_object($value = $mixed_value ?? (object) []) && $value instanceOf self)
+        else if ($is === self::SCHEMA_VALIDATE_IS_SCHEMA && is_object($value = $mixed_value ?? (object) []) && $value instanceOf self)
             $this->__attributes[$field] = $value;
+        else if ($is === self::SCHEMA_VALIDATE_IS_SCHEMA_DATA && is_array($value = $mixed_value ?? []))
+            $this->__attributes[$field] = new self(... array_values($value));
         else if (strpos($is, self::SCHEMA_VALIDATE_IS_LIST_OF) !== false && $class_name = str_replace(self::SCHEMA_VALIDATE_IS_LIST_OF, null, $is))
             $this->__attributes[$field] = new ListOf($class_name, is_array($mixed_value) ? $mixed_value : []);
         else if (strpos($is, self::SCHEMA_VALIDATE_IS_OBJECT_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_VALIDATE_IS_OBJECT_OF, null, $is))
@@ -96,7 +101,6 @@ class Schema {
             $this->__attributes[$field] = $value;
         else
             $this->__attributes[$field] = null;
-        
     }
 
     /**
