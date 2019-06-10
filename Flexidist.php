@@ -5,7 +5,9 @@
  */
 spl_autoload_register(function(string $classname) {
 	foreach ([
+		__DIR__ . '/traits/',
 		__DIR__ . '/packages/',
+		APPLICATION_PATH . 'traits/',
 		APPLICATION_PATH . 'packages/',
 	] as $namespace)
 		if (is_readable($filename = $namespace . str_replace('\\', '/', $classname) . '.php'))
