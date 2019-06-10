@@ -8,13 +8,11 @@ namespace HTTP;
 /**
 *
 */
-class Response {
+class Response extends \Schema\Type\JSON {
 
     /**
     *
     */
-    use \dotnotation;
-
     const HTTP_STATUS_TEXTS = [
         100 => 'Continue',
         101 => 'Switching Protocols',
@@ -79,64 +77,38 @@ class Response {
         510 => 'Not Extended',                                                // RFC2774
         511 => 'Network Authentication Required',                             // RFC6585
     ];
-
-    protected $Content = null;
+    const SCHEMA_VALIDATE_ATTRIBUTES = [
+        'Content' => self::SCHEMA_VALIDATE_IS_CONTENT,
+        'status_code' => self::SCHEMA_VALIDATE_IS_INT,
+        'headers' => self::SCHEMA_VALIDATE_IS_OBJECT,
+        'set_cookies' => self::SCHEMA_VALIDATE_IS_OBJECT
+    ];
     
     /**
     *
     */
     public function __construct(&$Content = null, int $status_code = 200, array $headers = []) {
-        $this->setContent($Content);
-        $this->dn_init([
+        parent::__construct([
+            'Content' => $Content,
             'status_code' => $status_code,
-            'headers' => array_replace([
+            'headers' => (object) array_replace([
                 'Content-Type' => 'text/html; charset=utf-8',
             ], $headers),
-            'set_cookies' => [],
+            'set_cookies' => new \StdClass(),
         ]);
     }
 
     /**
     *
     */
-    public function __get(string $name) {
-        return $this->{$name};
-    }
-
-    /**
-    *
-    */
-    public function __set(string $name, $mixed_value) {
-        if ($name === 'Content')
-            return $this->setContent($mixed_value);
-
-        return $this->{$name} = $mixed_value;
-    }
-
-    /**
-    *
-    */
-    public function setContent($content) {
-        if (!is_null($content) && !is_string($content) && !is_numeric($content) && !is_callable([$content, '__toString']))
-            throw new \UnexpectedValueException(sprintf('The %s::Content must be a string or object implementing __toString(), "%s" given.', get_called_class(), gettype($content)));
-
-        if (!is_null($content) && preg_match('/\.phtml$/isU', $content) && is_file(TEMPLATES_PATH . $content))
-            $content = file_get_contents(TEMPLATES_PATH . $content);
-
-        $this->Content = $content;
-    }
-
-    /**
-    *
-    */
     public function send(int $status_code = null) {
-        $status_code = $status_code ?? $this->dn_get('status_code');
+        $status_code = $status_code ?? $this->status_code;
 
         if (!headers_sent()) {
-            foreach ($this->dn_get('headers') as $name => $value)
+            foreach ($this->headers as $name => $value)
                 header(sprintf('%s: %s', $name, $value), 0 === strcasecmp($name, 'Content-Type'), $status_code);
             
-            foreach ($this->dn_get('set_cookies') as $name => $value)
+            foreach ($this->set_cookies as $name => $value)
                 header(sprintf('Set-Cookie: %s=%s', $name, $value), false, $status_code);
             
             http_response_code($status_code);

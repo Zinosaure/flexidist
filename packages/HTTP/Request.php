@@ -13,14 +13,15 @@ class Request extends \Schema\Type\JSON {
     /**
     *
     */
-    const SCHEMA_VALUE_READONLY = true;
-    const SCHEMA_VALIDATE_FIELDS = [
-        'server' => self::SCHEMA_VALIDATE_LIST,
-        'arg' => self::SCHEMA_VALIDATE_LIST,
-        'post' => self::SCHEMA_VALIDATE_LIST,
-        'cookie' => self::SCHEMA_VALIDATE_LIST,
-        'session' => self::SCHEMA_VALIDATE_LIST,
-        'attributes' => self::SCHEMA_VALIDATE_LIST,
+    const SCHEMA_VALUE_IS_READONLY = true;
+    const SCHEMA_VALIDATE_ATTRIBUTES = [
+        'Response' => self::SCHEMA_VALIDATE_IS_OBJECT_OF . __NAMESPACE__ . '\Response',
+        'servers' => self::SCHEMA_VALIDATE_IS_OBJECT,
+        'args' => self::SCHEMA_VALIDATE_IS_OBJECT,
+        'posts' => self::SCHEMA_VALIDATE_IS_OBJECT,
+        'cookies' => self::SCHEMA_VALIDATE_IS_OBJECT,
+        'sessions' => self::SCHEMA_VALIDATE_IS_OBJECT,
+        'attributes' => self::SCHEMA_VALIDATE_IS_SCHEMA,
     ];
 
     protected $http_requests = [
@@ -35,7 +36,6 @@ class Request extends \Schema\Type\JSON {
         'CONNECT'   => [],
         'TRACE'     => [],
     ];
-    protected $Response = null;
 
     /**
     *
@@ -43,20 +43,26 @@ class Request extends \Schema\Type\JSON {
     public function __construct($Content = null, ?Response $Response = null) {
         ($session_started = session_status() != PHP_SESSION_NONE) ? null : session_start();
 
-        $this->Response = $Response ?? new Response($Content);
         parent::__construct([
-            'server' => $_SERVER,
-            'arg' => $_GET,
-            'post' => $_POST,
-            'cookie' => $_COOKIE,
-            'session' => ($session_started ? $_SESSION : []),
-            'attributes' => [
+            'Response' => $Response ?? new Response($Content),
+            'servers' => (object) $_SERVER,
+            'args' => (object) $_GET,
+            'posts' => (object) $_POST,
+            'cookies' => (object) $_COOKIE,
+            'sessions' => (object) ($session_started ? $_SESSION : []),
+            'attributes' => new \Schema\Schema([
                 'REQUEST_METHOD' => strtoupper($_SERVER['REQUEST_METHOD']),
                 'DOCUMENT_ROOT' => DOCUMENT_ROOT,
                 'REQUEST_URI' => REQUEST_URI,
                 'REQUEST_QUERY_URI' => REQUEST_QUERY_URI,
                 'REQUEST_URIs' => explode('/', REQUEST_URI),
-            ],
+            ], [
+                'REQUEST_METHOD' => self::SCHEMA_VALIDATE_IS_STRING,
+                'DOCUMENT_ROOT' => self::SCHEMA_VALIDATE_IS_STRING,
+                'REQUEST_URI' => self::SCHEMA_VALIDATE_IS_STRING,
+                'REQUEST_QUERY_URI' => self::SCHEMA_VALIDATE_IS_STRING,
+                'REQUEST_URIs' => self::SCHEMA_VALIDATE_IS_LIST,
+            ]),
         ]);
     }
 

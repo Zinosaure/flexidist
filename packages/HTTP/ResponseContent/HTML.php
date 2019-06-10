@@ -8,14 +8,16 @@ namespace HTTP\ResponseContent;
 /**
 *
 */
-class HTML {
+class HTML extends \Schema\Type\JSON {
 
     /**
     *
     */
-    use \dotnotation;
-
-    protected $document = null;
+    const SCHEMA_VALUE_IS_READONLY = true;
+    const SCHEMA_VALIDATE_ATTRIBUTES = [
+        'document' => self::SCHEMA_VALIDATE_IS_STRING,
+        'args' => self::SCHEMA_VALIDATE_IS_LIST,
+    ];
 
     /**
     *
@@ -24,51 +26,53 @@ class HTML {
         if (!is_null($document) && preg_match('/\.phtml$/isU', $document) && is_file(TEMPLATES_PATH . $document))
             $document = file_get_contents(TEMPLATES_PATH . $document);
 
-        $this->document = $this->init($document ?: implode("\n", [
-            '<!DOCTYPE html>',
-            '<html {{ fn.html_attributes(html.attributes) }}>',
-            "\t" . '<head {{ fn.html_attributes(html.head.attributes) }}>',
-            "\t\t" . '{% extends "extends/head_content.phtml" %}',
-            "\t" . '</head>',
-            "\t" . '<body {{ fn.html_attributes(html.body.attributes) }}>',
-            "\t\t" . '{% extends "extends/html_content.phtml" %}',
-            "\t" . '</body>',
-            '</html>',
-        ]));
-        $this->dn_init(array_replace_recursive($vars, [
-            'fn' => [
-                'html_attributes' => function(array $attributes): string {
-                    $html_attributes = [];
-                    
-                    foreach ($attributes as $name => $value)
-                        if (!empty($name) && is_string($name) && (is_string($value) || is_null($value))  && $value !== false)
-                            $html_attributes[] = sprintf(' %s="%s"', $name, htmlspecialchars($value));
+        parent::__construct([
+            'document' => $this->init($document ?: implode("\n", [
+                '<!DOCTYPE html>',
+                '<html {{ fn.html_attributes(html.attributes) }}>',
+                "\t" . '<head {{ fn.html_attributes(html.head.attributes) }}>',
+                "\t\t" . '{% extends "extends/head_content.phtml" %}',
+                "\t" . '</head>',
+                "\t" . '<body {{ fn.html_attributes(html.body.attributes) }}>',
+                "\t\t" . '{% extends "extends/html_content.phtml" %}',
+                "\t" . '</body>',
+                '</html>',
+            ])),
+            'args' => array_replace_recursive($vars, [
+                'fn' => [
+                    'html_attributes' => function(array $attributes): string {
+                        $html_attributes = [];
                         
-                    return trim(implode(null, $html_attributes));
-                },
-            ],
-            'html' => [
-                'attributes' => [
-                    'lang' => 'en-US',
-                    'itemscope' => null,
-                    'itemtype' => 'http://schema.org/WebPage',
-                    'xmlns' => 'http://www.w3.org/1999/xhtml',
+                        foreach ($attributes as $name => $value)
+                            if (!empty($name) && is_string($name) && (is_string($value) || is_null($value))  && $value !== false)
+                                $html_attributes[] = sprintf(' %s="%s"', $name, htmlspecialchars($value));
+                            
+                        return trim(implode(null, $html_attributes));
+                    },
                 ],
-                'head' => [
+                'html' => [
                     'attributes' => [
-                        'prefix' => 'og:http://ogp.me/ns# fb:http://ogp.me/ns/fb# website:http://ogp.me/ns/website#',
+                        'lang' => 'en-US',
+                        'itemscope' => null,
+                        'itemtype' => 'http://schema.org/WebPage',
+                        'xmlns' => 'http://www.w3.org/1999/xhtml',
                     ],
-                    'base_href' => SERVER_NAME . DOCUMENT_ROOT,
-                    'title' => null,
-                    'description' => null,
-                    'content' => null,
+                    'head' => [
+                        'attributes' => [
+                            'prefix' => 'og:http://ogp.me/ns# fb:http://ogp.me/ns/fb# website:http://ogp.me/ns/website#',
+                        ],
+                        'base_href' => SERVER_NAME . DOCUMENT_ROOT,
+                        'title' => null,
+                        'description' => null,
+                        'content' => null,
+                    ],
+                    'body' => [
+                        'attributes' => [],
+                        'content' => null,
+                    ],
                 ],
-                'body' => [
-                    'attributes' => [],
-                    'content' => null,
-                ],
-            ],
-        ]));
+            ]),
+        ]);
     }
 
     /**
@@ -76,34 +80,6 @@ class HTML {
     */
     public function __toString(): string {
         return $this->execute();
-    }
-
-    /**
-    *
-    */
-    public function __get(string $name) {
-        return $this->{$name};
-    }
-
-    /**
-    *
-    */
-    public function __set(string $name, $mixed_value) {
-        if ($name === 'document')
-            return $this->setDocument($mixed_value);
-
-        return $this->{$name} = $mixed_value;
-    }
-
-    /**
-    *
-    */
-    public function setDocument(string $document, array $vars = []) {
-        if (!is_null($document) && preg_match('/\.phtml$/isU', $document) && is_file(TEMPLATES_PATH . $document))
-            $document = file_get_contents(TEMPLATES_PATH . $document);
-            
-        $this->document = $this->init($document);
-        $this->dn_init($vars);
     }
 
     /**
