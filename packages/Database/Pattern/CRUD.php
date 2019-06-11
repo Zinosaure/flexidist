@@ -32,7 +32,7 @@ abstract class CRUD {
 	*
 	*/
 
-	abstract static function PDO(): \database\PHP\PDO;
+	abstract static function PDO(): \Database\PDO\PDO;
 
 	/**
 	*

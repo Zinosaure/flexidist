@@ -22,7 +22,7 @@ abstract class MySQL extends Pattern\DAO {
 	*
 	*/
 
-	const PDO_DATABASE_NAME = 'a_database_name';
+	const PDO_DATABASE_NAME = 'test';
 	const PDO_DATABASE_USERANME = 'root';
 	const PDO_DATABASE_PASSWORD = '';
 	const PDO_DATABASE_HOST = 'localhost';
@@ -36,7 +36,7 @@ abstract class MySQL extends Pattern\DAO {
 	*/
 
 	final public static function PDO(): PHP\PDO {
-		return PHP\PDO::MySQL(static::PDO_DATABASE_NAME, static::PDO_DATABASE_USERNAME, static::PDO_DATABASE_PASSWORD, static::PDO_DATABASE_HOST, static::PDO_DATABASE_PORT, static::PDO_DATABASE_OPTIONS);
+		return PDO\PDO::MySQL(static::PDO_DATABASE_NAME, static::PDO_DATABASE_USERNAME, static::PDO_DATABASE_PASSWORD, static::PDO_DATABASE_HOST, static::PDO_DATABASE_PORT, static::PDO_DATABASE_OPTIONS);
 	}
 
 	/**

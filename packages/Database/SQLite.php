@@ -32,7 +32,7 @@ abstract class SQLite extends Pattern\DAO {
 	*/
 
 	final public static function PDO(): PHP\PDO {
-		return PHP\PDO::SQLite(static::PDO_DATABASE_NAME, static::PDO_DATABASE_OPTIONS);
+		return PDO\PDO::SQLite(static::PDO_DATABASE_NAME, static::PDO_DATABASE_OPTIONS);
 	}
 
 	/**
