@@ -8,7 +8,7 @@ namespace HTTP;
 /**
 *
 */
-class Request extends \Schema\Type\JSON {
+class Request extends \Schema\Schema {
 
     /**
     *
@@ -111,9 +111,9 @@ class Request extends \Schema\Type\JSON {
     *
     */
     public function listen(?string $REQUEST_URI = null, ?string $REQUEST_METHOD = null, bool $execute = true): bool {
-        $REQUEST_METHOD = strtoupper($REQUEST_METHOD) ?: $this->dn_get('attributes.REQUEST_METHOD');
-        $REQUEST_URI = $REQUEST_URI ?: $this->dn_get('attributes.REQUEST_URI');
-        $REQUEST_URIs = $REQUEST_URI ? explode('/', $REQUEST_URI) : $this->dn_get('attributes.REQUEST_URIs');
+        $REQUEST_METHOD = strtoupper($REQUEST_METHOD) ?: $this->attributes->REQUEST_METHOD;
+        $REQUEST_URI = $REQUEST_URI ?: $this->attributes->REQUEST_URI;
+        $REQUEST_URIs = $REQUEST_URI ? explode('/', $REQUEST_URI) : $this->attributes->REQUEST_URIs;
         
         foreach(array_replace($this->http_requests['*'], $this->http_requests[$REQUEST_METHOD]) as $pattern => $callback) {
             $args = [];

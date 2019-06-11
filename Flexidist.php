@@ -23,12 +23,6 @@ foreach([
 		$is_localhost ?? in_array($_SERVER['SERVER_NAME'], ['localhost', '127.0.0.1']),
 	'IS_HTTPS' =>
 		isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off',
-	'IS_REQUEST_METHOD_AJAX' =>
-		isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest',
-	'IS_REQUEST_METHOD_GET' =>
-		strtolower($_SERVER['REQUEST_METHOD']) == 'get',
-	'IS_REQUEST_METHOD_POST' =>
-		strtolower($_SERVER['REQUEST_METHOD']) == 'post',
 	
 	'SERVER_NAME' =>
 		(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off' ? 'https://' : 'http://') . $_SERVER['SERVER_NAME'],
@@ -50,12 +44,13 @@ foreach([
 	'PACKAGES_PATH' =>
 		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/packages/',
 ] as $name => $value)
-if (!defined($name))
-	define(strtoupper($name), $value);
+	if (!defined($name))
+		define(strtoupper($name), $value);
 	
 foreach ([
 	APPLICATION_PATH,
 	APPLICATION_PATH . 'packages/',
+	APPLICATION_PATH . 'traits/',
 	APPLICATION_PATH . 'templates/',
 	APPLICATION_PATH . '../public/',
 	APPLICATION_PATH . '../public/css-js/',

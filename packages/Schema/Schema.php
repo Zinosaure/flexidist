@@ -15,6 +15,7 @@ class Schema {
     *
     */
     const SCHEMA_VALUE_IS_READONLY = false;
+    const SCHEMA_VALUE_MISMATCH_SET_NULL = true;
 
     const SCHEMA_VALIDATE_IS_CONTENT = 'is_content';
     const SCHEMA_VALIDATE_IS_STRING = 'is_string';
@@ -59,7 +60,7 @@ class Schema {
             else if ($is === self::SCHEMA_VALIDATE_IS_SCHEMA_DATA && is_array($value = $data[$field] ?? []))
                 $this->__attributes[$field] = new self(... array_values($value));
             else if (strpos($is, self::SCHEMA_VALIDATE_IS_LIST_OF) !== false && $class_name = str_replace(self::SCHEMA_VALIDATE_IS_LIST_OF, null, $is))
-                $this->__attributes[$field] = new ListOf($class_name, is_array($data[$field] ?? null) ? $data[$field] : []);
+                $this->__attributes[$field] = self::createListOf($class_name, is_array($data[$field] ?? null) ? $data[$field] : []);
             else if (strpos($is, self::SCHEMA_VALIDATE_IS_OBJECT_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_VALIDATE_IS_OBJECT_OF, null, $is))
                 && is_object($value = $data[$field] ?? (object) []) && $value instanceOf $class_name)
                 $this->__attributes[$field] = $value;
@@ -102,11 +103,11 @@ class Schema {
         else if ($is === self::SCHEMA_VALIDATE_IS_SCHEMA_DATA && is_array($value = $mixed_value ?? []))
             $this->__attributes[$field] = new self(... array_values($value));
         else if (strpos($is, self::SCHEMA_VALIDATE_IS_LIST_OF) !== false && $class_name = str_replace(self::SCHEMA_VALIDATE_IS_LIST_OF, null, $is))
-            $this->__attributes[$field] = new ListOf($class_name, is_array($mixed_value ?? null) ? $mixed_value : []);
+            $this->__attributes[$field] = self::createListOf($class_name, is_array($mixed_value ?? null) ? $mixed_value : []);
         else if (strpos($is, self::SCHEMA_VALIDATE_IS_OBJECT_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_VALIDATE_IS_OBJECT_OF, null, $is))
                 && is_object($value = $mixed_value ?? (object) []) && $value instanceOf $class_name)
             $this->__attributes[$field] = $value;
-        else
+        else if (static::SCHEMA_VALUE_MISMATCH_SET_NULL)
             $this->__attributes[$field] = null;
     }
 
@@ -119,5 +120,107 @@ class Schema {
         
         return null;
     }
+
+    /**
+    *
+    */
+    final public static function createListOf(string $class_name, array $data): object {
+
+        /**
+        *
+        */
+
+        return new class($class_name, $data) implements \ArrayAccess {
+            
+            /**
+            *
+            */
+            protected $class_name = null;
+            protected $data = [];
+
+            /**
+            *
+            */
+            public function __construct(string $class_name, array $data) {
+                $this->class_name = $class_name;
+
+                foreach ($data as $i => $Schema)
+                    $this->offsetSet($i, $Schema);
+            }
+
+            /**
+            *
+            */
+            public function __get($offset) {
+                return $this->offsetGet($offset);
+            }
+
+            /**
+            *
+            */
+            public function __set($offset, $Schema) {
+                $this->offsetSet($offset, $Schema);
+            }
+
+            /**
+            *
+            */
+            public function __isset($offset) {
+                $this->offsetExists($offset);
+            }
+
+            /**
+            *
+            */
+            public function __unset($offset) {
+                $this->offsetUnset($offset);
+            }
+            
+            /**
+            *
+            */
+            public function offsetGet($offset) {
+                return $this->data[$offset] ?? null;
+            }
+
+            /**
+            *
+            */
+            public function offsetSet($offset, $Schema) {
+                if ($Schema instanceOf $this->class_name || (is_array($Schema) && $Schema = new $this->class_name($Schema))) {
+                    $offset = $Schema->ID() ?: $offset;
+
+                    if (is_null($offset))
+                        return $this->data[] = $Schema;
+                    
+                    $this->data[$offset] = $Schema;
+                }
+            }
+
+            /**
+            *
+            */
+            public function offsetExists($offset) {
+                return isset($this->data[$offset]);
+            }
+
+            /**
+            *
+            */
+            public function offsetUnset($offset) {
+                if (is_object($offset) && $offset instanceOf $this->class_name)
+                    $offset = array_search($offset, $this->data);
+
+                unset($this->data[$offset]);
+            }
+
+            /**
+            *
+            */
+            public function items(): array {
+                return $this->data;
+            }
+        };
+    } 
 }
 ?>

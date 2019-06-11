@@ -8,7 +8,7 @@ namespace HTTP\ResponseContent;
 /**
 *
 */
-class HTML extends \Schema\Type\JSON {
+class HTML extends \Schema\Schema {
 
     /**
     *
@@ -224,7 +224,7 @@ class HTML extends \Schema\Type\JSON {
             $document = $translate ? $this->translate() : $this->document;
 
             if ($translate && $evalutate) {
-                extract($this->dn_get());
+                extract($this->args);
                 echo eval('?>' . $document);
             } else if ($evalutate)
                 echo eval('?>' . $document);

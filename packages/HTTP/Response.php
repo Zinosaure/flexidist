@@ -8,7 +8,7 @@ namespace HTTP;
 /**
 *
 */
-class Response extends \Schema\Type\JSON {
+class Response extends \Schema\Schema {
 
     /**
     *
