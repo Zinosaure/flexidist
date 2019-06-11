@@ -2,55 +2,37 @@
 
 /**
 *
-*
-*
 */
-
-namespace Database\PDO;
+namespace Database;
 
 /**
 *
-*
-*
 */
-
 final class PDOStatement extends \PDOStatement {
 
 	/**
 	*
-	*
-	*
 	*/
-
 	public $PDO = null;
 	public $queryString = null;
 
 	/**
 	*
-	*
-	*
 	*/
-
 	protected function __construct(PDO &$PDO) {
 		$this->PDO = $PDO;
 	}
 
 	/**
 	*
-	*
-	*
 	*/
-
 	final public function __set($name, $value) {
 		return;
 	}
 
 	/**
 	*
-	*
-	*
 	*/
-
 	final public function bindParams(array $params) {
 		foreach (array_values($params) as $i => $value) {
 			$var_type = \PDO::PARAM_STR;
@@ -71,10 +53,7 @@ final class PDOStatement extends \PDOStatement {
 
 	/**
 	*
-	*
-	*
 	*/
-
 	final public function bindValues(array $params) {
 		foreach (array_values($params) as $i => $value) {
 			$var_type = \PDO::PARAM_STR;

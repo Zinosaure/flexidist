@@ -13,16 +13,17 @@ class HTML extends \Schema\Schema {
     /**
     *
     */
-    const SCHEMA_VALUE_IS_READONLY = true;
+    use \Pattern\Registry;
+
+    const SCHEMA_VALUE_MISMATCH_SET_NULL = false;
     const SCHEMA_VALIDATE_ATTRIBUTES = [
-        'document' => self::SCHEMA_VALIDATE_IS_STRING,
-        'args' => self::SCHEMA_VALIDATE_IS_LIST,
+        'document' => self::SCHEMA_VALIDATE_IS_CONTENT,
     ];
 
     /**
     *
     */
-    public function __construct(?string $document = null, array $vars = []) {
+    public function __construct(?string $document = null, array $context_vars = []) {
         if (!is_null($document) && preg_match('/\.phtml$/isU', $document) && is_file(TEMPLATES_PATH . $document))
             $document = file_get_contents(TEMPLATES_PATH . $document);
 
@@ -38,41 +39,42 @@ class HTML extends \Schema\Schema {
                 "\t" . '</body>',
                 '</html>',
             ])),
-            'args' => array_replace_recursive($vars, [
-                'fn' => [
-                    'html_attributes' => function(array $attributes): string {
-                        $html_attributes = [];
-                        
-                        foreach ($attributes as $name => $value)
-                            if (!empty($name) && is_string($name) && (is_string($value) || is_null($value))  && $value !== false)
-                                $html_attributes[] = sprintf(' %s="%s"', $name, htmlspecialchars($value));
-                            
-                        return trim(implode(null, $html_attributes));
-                    },
-                ],
-                'html' => [
-                    'attributes' => [
-                        'lang' => 'en-US',
-                        'itemscope' => null,
-                        'itemtype' => 'http://schema.org/WebPage',
-                        'xmlns' => 'http://www.w3.org/1999/xhtml',
-                    ],
-                    'head' => [
-                        'attributes' => [
-                            'prefix' => 'og:http://ogp.me/ns# fb:http://ogp.me/ns/fb# website:http://ogp.me/ns/website#',
-                        ],
-                        'base_href' => SERVER_NAME . DOCUMENT_ROOT,
-                        'title' => null,
-                        'description' => null,
-                        'content' => null,
-                    ],
-                    'body' => [
-                        'attributes' => [],
-                        'content' => null,
-                    ],
-                ],
-            ]),
         ]);
+        self::reginit(array_replace_recursive([
+            'html' => [
+                'attributes' => [
+                    'lang' => 'en-US',
+                    'itemscope' => null,
+                    'itemtype' => 'http://schema.org/WebPage',
+                    'xmlns' => 'http://www.w3.org/1999/xhtml',
+                ],
+                'head' => [
+                    'attributes' => [
+                        'prefix' => 'og:http://ogp.me/ns# fb:http://ogp.me/ns/fb# website:http://ogp.me/ns/website#',
+                    ],
+                    'base_href' => SERVER_NAME . DOCUMENT_ROOT,
+                    'title' => null,
+                    'description' => null,
+                    'content' => null,
+                ],
+                'body' => [
+                    'attributes' => [],
+                    'content' => null,
+                ],
+            ],
+        ], $context_vars, [
+            'fn' => [
+                'html_attributes' => function(array $attributes): string {
+                    $html_attributes = [];
+                    
+                    foreach ($attributes as $name => $value)
+                        if (!empty($name) && is_string($name) && (is_string($value) || is_null($value))  && $value !== false)
+                            $html_attributes[] = sprintf(' %s="%s"', $name, htmlspecialchars($value));
+                        
+                    return trim(implode(null, $html_attributes));
+                },
+            ],
+        ]));
     }
 
     /**
@@ -80,6 +82,32 @@ class HTML extends \Schema\Schema {
     */
     public function __toString(): string {
         return $this->execute();
+    }
+
+    /**
+    *
+    */
+    public function get(?string $name = null) {
+        return self::regget($name);
+    }
+
+    /**
+    *
+    */
+    public function set(string $name, $mixed_value): self {
+        self::regset($name, $mixed_value, false, false);
+        
+        return $this;
+    }
+
+    /**
+    *
+    */
+    public function setDocument(string $document) {
+        if (!is_null($document) && preg_match('/\.phtml$/isU', $document) && is_file(TEMPLATES_PATH . $document))
+            $document = file_get_contents(TEMPLATES_PATH . $document);
+
+        $this->document = $document;
     }
 
     /**
@@ -224,7 +252,7 @@ class HTML extends \Schema\Schema {
             $document = $translate ? $this->translate() : $this->document;
 
             if ($translate && $evalutate) {
-                extract($this->args);
+                extract(self::regget());
                 echo eval('?>' . $document);
             } else if ($evalutate)
                 echo eval('?>' . $document);

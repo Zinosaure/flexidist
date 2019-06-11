@@ -18,14 +18,14 @@ trait Registry {
 	/**
 	 *
 	 */
-    final public static function reginit(array $registryData) {
+    final protected static function reginit(array $registryData) {
         self::$__RegistryData = $registryData;
     }
     
 	/**
 	 *
 	 */
-    final public static function regget(string $name = null, $default = null) {
+    final protected static function regget(string $name = null, $default = null) {
         if (is_null($name))
             return self::$__RegistryData;
 
@@ -35,7 +35,7 @@ trait Registry {
 	/**
 	 *
 	 */
-    final public static function regset(string $name, $mixed_value, bool $transtype = false, bool $throw_exception = true) {
+    final protected static function regset(string $name, $mixed_value, bool $transtype = false, bool $throw_exception = true) {
         eval('$attribute = &self::$__RegistryData["' . implode('"]["', explode('.', $name)) . '"];');
         $attribute = !is_null($attribute) ? $attribute : $mixed_value;
             
@@ -48,7 +48,7 @@ trait Registry {
 	/**
 	 *
 	 */
-    final public static function regunset(string $name, string ...$names) {
+    final protected static function regunset(string $name, string ...$names) {
     	foreach(func_get_args() as $name)
         	eval('unset(self::$__RegistryData["' . implode('"]["', explode('.', $name)) . '"]);');
     }
@@ -56,7 +56,7 @@ trait Registry {
 	/**
 	 *
 	 */
-    final public static function reghas(string $name): bool {
+    final protected static function reghas(string $name): bool {
         return eval('return isset(self::$__RegistryData["' . implode('"]["', explode('.', $name)) . '"]);');
     }
 }

@@ -2,37 +2,24 @@
 
 /**
 *
-*
-*
 */
-
-namespace Database\PDO;
+namespace Database;
 
 /**
 *
-*
-*
 */
-
 final class PDO extends \PDO {
 
 	/**
 	*
-	*
-	*
 	*/
-
 	private $errors = [];
 	protected static $PDOs = [];
 
-
 	/**
 	*
-	*
-	*
 	*/
-
-	final public function __construct(string $dsn, string $username = 'root', string $password = null, array $options = []) {
+	final protected function __construct(string $dsn, string $username = 'root', string $password = null, array $options = []) {
 		$options = array_replace_recursive([			
 			\PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
 			\PDO::ATTR_EMULATE_PREPARES => true,
@@ -50,10 +37,7 @@ final class PDO extends \PDO {
 
 	/**
 	*
-	*
-	*
 	*/
-
 	final public static function MySQL(string $database, string $username = 'root', string $password = null, string $hostname = 'localhost', int $port = 3306, array $options = []): self {
 		if (isset(self::$PDOs[$dsn = 'mysql:host=' . $hostname . ';dbname=' . $database . ';port=' . $port . ';charset=utf8']) && self::$PDOs[$dsn] instanceOf self)
 			return self::$PDOs[$dsn];
@@ -69,10 +53,7 @@ final class PDO extends \PDO {
 
 	/**
 	*
-	*
-	*
 	*/
-
 	final public static function SQLite(string $database, array $options = []): self {
 		if (isset(self::$PDOs[$dsn = 'sqlite:' . $database]) && self::$PDOs[$dsn] instanceOf self)
 			return self::$PDOs[$dsn];
@@ -88,17 +69,14 @@ final class PDO extends \PDO {
 
 	/**
 	*
-	*
-	*
 	*/
-
-	final public function execute(string $queryString, array $params = [], array $options = []) {
-		if ($sth = $this->prepare($queryString, $options))
+	final public function execute(string $query_string, array $params = [], array $options = []) {
+		if ($sth = $this->prepare($query_string, $options))
 			if (($sth->bindValues($params)) && $sth->execute()) 
 				return $sth;
 
 		$this->errors = [
-			$queryString => [
+			$query_string => [
 				'PDO' => $this->errorInfo(),
 				'PDOStatement' => $sth ? $sth->errorInfo() : ['00000', null, null],
 			],
@@ -109,10 +87,7 @@ final class PDO extends \PDO {
 
 	/**
 	*
-	*
-	*
 	*/
-
 	final public function getErrors() {
 		return $this->errors;
 	}
