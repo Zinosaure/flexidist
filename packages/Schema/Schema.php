@@ -44,7 +44,7 @@ class Schema {
         foreach ($this->__schema_attributes as $field => $is) {
             if (is_array($is))
                 $this->__attributes[$field] = new Type\JSON($data[$field] ?? [], $is);
-            else if ($is === self::SCHEMA_VALIDATE_IS_CONTENT 
+            else if ($is === self::SCHEMA_VALIDATE_IS_CONTENT
                 && (is_string($value = $data[$field] ?? null) || is_numeric($value) || is_callable([$value, '__toString'])))
                 $this->__attributes[$field] = $value;
             else if ($is === self::SCHEMA_VALIDATE_IS_STRING && is_string($value = $data[$field] ?? null))
@@ -63,10 +63,12 @@ class Schema {
                 $this->__attributes[$field] = $value;
             else if (strpos($is, self::SCHEMA_VALIDATE_IS_LIST_OF) !== false && $class_name = str_replace(self::SCHEMA_VALIDATE_IS_LIST_OF, null, $is))
                 $this->__attributes[$field] = self::createListOf($class_name, is_array($data ?? null) ? $data : []);
-            else if (strpos($is, self::SCHEMA_VALIDATE_IS_OBJECT_OF) !== false 
-                && class_exists($class_name = str_replace(self::SCHEMA_VALIDATE_IS_OBJECT_OF, null, $is)) && $value = new $class_name($data[$field] ?? []))
-                $this->__attributes[$field] = $value;
-            else 
+            else if (strpos($is, self::SCHEMA_VALIDATE_IS_OBJECT_OF) !== false
+	            && class_exists($class_name = str_replace(self::SCHEMA_VALIDATE_IS_OBJECT_OF, null, $is))
+	            && ((is_object($value = $data[$field] ?? null) && $data[$field] instanceOf $class_name)
+	            	|| (is_array($value = $data[$field] ?? null) && $value = new $class_name($value))))
+	            $this->__attributes[$field] = $value;
+            else
                 $this->__attributes[$field] = null;
         }
     }
@@ -79,16 +81,16 @@ class Schema {
 
         foreach ($this->__schema_attributes as $name => $is) {
             if (!in_array($is, [
-                self::SCHEMA_VALIDATE_IS_CONTENT, 
-                self::SCHEMA_VALIDATE_IS_STRING, 
-                self::SCHEMA_VALIDATE_IS_NUMERIC, 
-                self::SCHEMA_VALIDATE_IS_INT, 
-                self::SCHEMA_VALIDATE_IS_INTEGER, 
+                self::SCHEMA_VALIDATE_IS_CONTENT,
+                self::SCHEMA_VALIDATE_IS_STRING,
+                self::SCHEMA_VALIDATE_IS_NUMERIC,
+                self::SCHEMA_VALIDATE_IS_INT,
+                self::SCHEMA_VALIDATE_IS_INTEGER,
                 self::SCHEMA_VALIDATE_IS_BOOLEAN
             ])) {
                 if ($this->{$name} instanceOf self)
                     $export_data[$name] = $this->{$name}->__attributes;
-                else 
+                else
                     $export_data[$name] = (string) $this->{$name};
             } else
                 $export_data[$name] = $this->{$name};
@@ -99,7 +101,7 @@ class Schema {
     /**
     *
     */
-    final public function __get(string $field) {
+    final public function &__get(string $field) {
         return $this->__attributes[$field];
     }
     
@@ -112,7 +114,7 @@ class Schema {
             
         if (is_array($is))
             $this->__attributes[$field] = new Type\JSON($data[$field] ?? [], $is);
-        else if ($is === self::SCHEMA_VALIDATE_IS_CONTENT 
+        else if ($is === self::SCHEMA_VALIDATE_IS_CONTENT
             && (is_string($value = $mixed_value ?? null) || is_numeric($value) || is_callable([$value, '__toString'])))
             $this->__attributes[$field] = $value;
         else if ($is === self::SCHEMA_VALIDATE_IS_STRING && is_string($value = $mixed_value ?? null))
@@ -131,8 +133,10 @@ class Schema {
             $this->__attributes[$field] = $value;
         else if (strpos($is, self::SCHEMA_VALIDATE_IS_LIST_OF) !== false && $class_name = str_replace(self::SCHEMA_VALIDATE_IS_LIST_OF, null, $is))
             $this->__attributes[$field] = self::createListOf($class_name, is_array($mixed_value ?? null) ? $mixed_value : []);
-        else if (strpos($is, self::SCHEMA_VALIDATE_IS_OBJECT_OF) !== false 
-            && class_exists($class_name = str_replace(self::SCHEMA_VALIDATE_IS_OBJECT_OF, null, $is)) && $value = new $class_name($mixed_value ?? []))
+        else if (strpos($is, self::SCHEMA_VALIDATE_IS_OBJECT_OF) !== false
+            && class_exists($class_name = str_replace(self::SCHEMA_VALIDATE_IS_OBJECT_OF, null, $is))
+            && ((is_object($value = $mixed_value ?? null) && $value instanceOf $class_name)
+            	|| (is_array($value = $mixed_value ?? null) && $value = new $class_name($value))))
             $this->__attributes[$field] = $value;
         else if (static::SCHEMA_VALUE_MISMATCH_SET_NULL)
             $this->__attributes[$field] = null;
@@ -255,6 +259,6 @@ class Schema {
                 return count($this->data);
             }
         };
-    } 
+    }
 }
 ?>

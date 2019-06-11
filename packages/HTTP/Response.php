@@ -87,7 +87,7 @@ class Response extends \Schema\Schema {
     /**
     *
     */
-    public function __construct(&$Content = null, int $status_code = 200, array $headers = []) {
+    public function __construct($Content = null, int $status_code = 200, array $headers = []) {
         parent::__construct([
             'Content' => $Content,
             'status_code' => $status_code,

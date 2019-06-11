@@ -13,11 +13,11 @@ class HTML extends \Schema\Schema {
     /**
     *
     */
-    use \Pattern\Registry;
 
     const SCHEMA_VALUE_MISMATCH_SET_NULL = false;
     const SCHEMA_VALIDATE_ATTRIBUTES = [
         'document' => self::SCHEMA_VALIDATE_IS_CONTENT,
+        'args' => self::SCHEMA_VALIDATE_IS_LIST,
     ];
 
     /**
@@ -39,42 +39,42 @@ class HTML extends \Schema\Schema {
                 "\t" . '</body>',
                 '</html>',
             ])),
+            'args' => array_replace_recursive([
+	            'html' => [
+	                'attributes' => [
+	                    'lang' => 'en-US',
+	                    'itemscope' => null,
+	                    'itemtype' => 'http://schema.org/WebPage',
+	                    'xmlns' => 'http://www.w3.org/1999/xhtml',
+	                ],
+	                'head' => [
+	                    'attributes' => [
+	                        'prefix' => 'og:http://ogp.me/ns# fb:http://ogp.me/ns/fb# website:http://ogp.me/ns/website#',
+	                    ],
+	                    'base_href' => SERVER_NAME . DOCUMENT_ROOT,
+	                    'title' => null,
+	                    'description' => null,
+	                    'content' => null,
+	                ],
+	                'body' => [
+	                    'attributes' => [],
+	                    'content' => null,
+	                ],
+	            ],
+	        ], $context_vars, [
+	            'fn' => [
+	                'html_attributes' => function(array $attributes): string {
+	                    $html_attributes = [];
+	                    
+	                    foreach ($attributes as $name => $value)
+	                        if (!empty($name) && is_string($name) && (is_string($value) || is_null($value))  && $value !== false)
+	                            $html_attributes[] = sprintf(' %s="%s"', $name, htmlspecialchars($value));
+	                        
+	                    return trim(implode(null, $html_attributes));
+	                },
+	            ],
+	        ]),
         ]);
-        self::reginit(array_replace_recursive([
-            'html' => [
-                'attributes' => [
-                    'lang' => 'en-US',
-                    'itemscope' => null,
-                    'itemtype' => 'http://schema.org/WebPage',
-                    'xmlns' => 'http://www.w3.org/1999/xhtml',
-                ],
-                'head' => [
-                    'attributes' => [
-                        'prefix' => 'og:http://ogp.me/ns# fb:http://ogp.me/ns/fb# website:http://ogp.me/ns/website#',
-                    ],
-                    'base_href' => SERVER_NAME . DOCUMENT_ROOT,
-                    'title' => null,
-                    'description' => null,
-                    'content' => null,
-                ],
-                'body' => [
-                    'attributes' => [],
-                    'content' => null,
-                ],
-            ],
-        ], $context_vars, [
-            'fn' => [
-                'html_attributes' => function(array $attributes): string {
-                    $html_attributes = [];
-                    
-                    foreach ($attributes as $name => $value)
-                        if (!empty($name) && is_string($name) && (is_string($value) || is_null($value))  && $value !== false)
-                            $html_attributes[] = sprintf(' %s="%s"', $name, htmlspecialchars($value));
-                        
-                    return trim(implode(null, $html_attributes));
-                },
-            ],
-        ]));
     }
 
     /**
@@ -87,17 +87,11 @@ class HTML extends \Schema\Schema {
     /**
     *
     */
-    public function get(?string $name = null) {
-        return self::regget($name);
-    }
-
-    /**
-    *
-    */
-    public function set(string $name, $mixed_value): self {
-        self::regset($name, $mixed_value, false, false);
+    public function arg(string $name, $mixed_value = null) {
+        if (is_null($mixed_value))
+            return eval('return $this->args["' . implode('"]["', explode('.', $name)) . '"] ?? null;');
         
-        return $this;
+        eval('$this->args["' . implode('"]["', explode('.', $name)) . '"] = $mixed_value;');
     }
 
     /**
@@ -153,7 +147,7 @@ class HTML extends \Schema\Schema {
             $variables = [];
             $double_quote_opened = false;
             $keywords = [
-                '&&', '||', ',', ';', '(', ')', '!', '?', ':', '===', '==', '=', 
+                '&&', '||', ',', ';', '(', ')', '!', '?', ':', '===', '==', '=',
                 '!==', '!=', '>=', '<=', '<>', '>', '<','%', '*', '^', '/', '+', '-',
                 'return', 'break', 'continue',
             ];
@@ -252,7 +246,7 @@ class HTML extends \Schema\Schema {
             $document = $translate ? $this->translate() : $this->document;
 
             if ($translate && $evalutate) {
-                extract(self::regget());
+                extract($this->args);
                 echo eval('?>' . $document);
             } else if ($evalutate)
                 echo eval('?>' . $document);

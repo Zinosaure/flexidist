@@ -21,7 +21,13 @@ class Request extends \Schema\Schema {
         'posts' => self::SCHEMA_VALIDATE_IS_OBJECT,
         'cookies' => self::SCHEMA_VALIDATE_IS_OBJECT,
         'sessions' => self::SCHEMA_VALIDATE_IS_OBJECT,
-        'attributes' => self::SCHEMA_VALIDATE_IS_SCHEMA,
+        'attributes' => [
+            'REQUEST_METHOD' => self::SCHEMA_VALIDATE_IS_STRING,
+            'DOCUMENT_ROOT' => self::SCHEMA_VALIDATE_IS_STRING,
+            'REQUEST_URI' => self::SCHEMA_VALIDATE_IS_STRING,
+            'REQUEST_QUERY_URI' => self::SCHEMA_VALIDATE_IS_STRING,
+            'REQUEST_URIs' => self::SCHEMA_VALIDATE_IS_LIST,
+        ],
     ];
 
     protected $http_requests = [
@@ -50,19 +56,13 @@ class Request extends \Schema\Schema {
             'posts' => (object) $_POST,
             'cookies' => (object) $_COOKIE,
             'sessions' => (object) ($session_started ? $_SESSION : []),
-            'attributes' => new \Schema\Schema([
+            'attributes' => [
                 'REQUEST_METHOD' => strtoupper($_SERVER['REQUEST_METHOD']),
                 'DOCUMENT_ROOT' => DOCUMENT_ROOT,
                 'REQUEST_URI' => REQUEST_URI,
                 'REQUEST_QUERY_URI' => REQUEST_QUERY_URI,
                 'REQUEST_URIs' => explode('/', REQUEST_URI),
-            ], [
-                'REQUEST_METHOD' => self::SCHEMA_VALIDATE_IS_STRING,
-                'DOCUMENT_ROOT' => self::SCHEMA_VALIDATE_IS_STRING,
-                'REQUEST_URI' => self::SCHEMA_VALIDATE_IS_STRING,
-                'REQUEST_QUERY_URI' => self::SCHEMA_VALIDATE_IS_STRING,
-                'REQUEST_URIs' => self::SCHEMA_VALIDATE_IS_LIST,
-            ]),
+            ],
         ]);
     }
 
