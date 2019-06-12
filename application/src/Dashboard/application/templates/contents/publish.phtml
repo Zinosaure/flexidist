@@ -1,0 +1,111 @@
+<form>
+	<fieldset>
+		<legend>Content Type (Page content, blog post or something else ...)</legend>
+		<hr class="mt-1" />
+		<div class="form-group">
+			<div class="form-group">
+				<div class="custom-control custom-radio">
+					<input type="radio" id="customRadio1" name="customRadio" class="custom-control-input" checked="">
+					<label class="custom-control-label" for="customRadio1">Page content</label>
+				</div>
+				<div class="custom-control custom-radio">
+					<input type="radio" id="customRadio2" name="customRadio" class="custom-control-input">
+					<label class="custom-control-label" for="customRadio2">Blog post (article)</label>
+				</div>
+				<div class="custom-control custom-radio">
+					<input type="radio" id="customRadio3" name="customRadio" class="custom-control-input">
+					<label class="custom-control-label" for="customRadio3">Something else...</label>
+				</div>
+			</div>
+			<small class="form-text text-muted">We'll never share your email with anyone else.</small>
+		</div>
+	</fieldset>
+	<fieldset>
+		<legend>Path URL (Route pattern)</legend>
+		<hr class="mt-1" />
+		<div class="form-group">
+			<div class="row">
+				<div class="col-lg-7 col-md-7 col-sm-12">
+					<select class="form-control" name="">
+						<option value="">/</option>
+					</select>
+				</div>
+				<div class="col-lg-5 col-md-5 col-sm-12">
+					<input class="form-control" type="text" name="" />
+				</div>
+			</div>
+			<small class="form-text text-muted">We'll never share your email with anyone else.</small>
+		</div>
+	</fieldset>
+	<fieldset>
+		<legend>Search Engine Optimization (SEO)</legend>
+		<hr class="mt-1" />
+		
+		<div class="form-group">
+			<label>Title</label>
+			<input type="text" class="form-control" placeholder="Hello, world!" name="" />
+		</div>
+		<div class="form-group">
+			<label>Description</label>
+			<textarea class="form-control" rows="3" name="description"></textarea>
+		</div>
+		<div class="form-group">
+			<div class="row">
+				<div class="col-lg-6 col-md-6 col-sm-12">
+					<label>Robots & Googlebot</label>
+					<select class="form-control" name="">
+						<option value="">/</option>
+					</select>
+				</div>
+				<div class="col-lg-6 col-md-6 col-sm-12">
+					<label>Breadcrumbs</label>
+					<input class="form-control" type="text" name="" />
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="row">
+				<div class="col-lg-6 col-md-6 col-sm-12">
+					<label>Keywords</label>
+					<input class="form-control" type="text" name="" />
+				</div>
+				<div class="col-lg-6 col-md-6 col-sm-12">
+					<label>Canonical URL</label>
+					<input class="form-control" type="text" name="" />
+				</div>
+			</div>
+			<small class="form-text text-muted">We'll never share your email with anyone else.</small>
+		</div>
+	</fieldset>
+	<fieldset>
+		<legend>HTTP Redirection</legend>
+		<hr class="mt-1" />
+		<div class="form-group">
+			<div class="row">
+				<div class="col-lg-4 col-md-4 col-sm-12">
+					<label>Response Status</label>
+					<select class="form-control" name="">
+						<option value="">/</option>
+					</select>
+				</div>
+				<div class="col-lg-8 col-md-8 col-sm-12">
+					<label>Redirection (URL)</label>
+					<input class="form-control" type="text" name="" />
+				</div>
+			</div>
+			<small class="form-text text-muted">We'll never share your email with anyone else.</small>
+		</div>
+	</fieldset>
+	<fieldset>
+		<legend>Content</legend>
+		<hr class="mt-1" />
+		
+		<div class="form-group">
+			<textarea class="form-control" rows="3" name="description"></textarea>
+			<small class="form-text text-muted">We'll never share your email with anyone else.</small>
+		</div>
+	</fieldset>
+	<fieldset class="form-group">
+		<button type="submit" class="btn btn-primary btn-lg">Submit</button>
+	</fieldset>
+</form>

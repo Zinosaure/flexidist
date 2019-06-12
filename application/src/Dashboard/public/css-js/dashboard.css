@@ -1,0 +1,16 @@
+@import url("https://fonts.googleapis.com/css?family=Quicksand&display=swap");
+@import url("https://fonts.googleapis.com/css?family=Roboto:300,400,500,700");
+
+html, body {
+    font-size: 16px;
+    font-family: 'Quicksand', sans-serif;
+}
+
+.container {
+    max-width: 1000px;
+    padding: 0 15px;
+}
+
+textarea {
+	min-height: 100px;
+}
