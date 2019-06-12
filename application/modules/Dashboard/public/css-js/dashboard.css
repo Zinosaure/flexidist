@@ -1,13 +1,13 @@
+@import url("materia_v4/bootstrap.min.css");
 @import url("https://fonts.googleapis.com/css?family=Quicksand&display=swap");
-@import url("https://fonts.googleapis.com/css?family=Roboto:300,400,500,700");
 
 html, body {
-    font-size: 16px;
+    font-size: 15px;
     font-family: 'Quicksand', sans-serif;
 }
 
 .container {
-    max-width: 1000px;
+    max-width: 994px;
     padding: 0 15px;
 }
 

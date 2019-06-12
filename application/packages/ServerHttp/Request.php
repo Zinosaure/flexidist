@@ -67,6 +67,26 @@ class Request extends \TypeHint\Schema {
             ],
         ]);
 
+        $this->map('get', 'rsrc/(string:module_name)/*:filename', function(string $module_name, string $filename) {
+            if (is_dir($filename = ROOT_MODULES_PATH . preg_replace('/^rsrc\//', null, REQUEST_URI)) || !file_exists($filename))
+                $this->Response->status_code = 404;
+
+            $mime_type = 'application/octet-stream';
+                
+            if (array_key_exists($extension = strtolower(@array_pop(explode('.', $filename))), $mime_types = [
+                'css' => 'text/css',
+                'js' =>  'application/javascript',
+                'png' => 'image/png',
+                'jpg' => 'image/jpeg',
+                'gif' => 'image/gif',
+            ]))
+                $mime_type = $mime_types[$extension];
+                
+            $this->Response->headers->{'Content-Type'} = $mime_type;
+            $this->Response->Content = @file_get_contents($filename);
+            $this->Response->send();
+        });
+
         if ($change_base) {
             $this->attributes->DOCUMENT_ROOT = $this->attributes->DOCUMENT_ROOT . ($root = array_shift($this->attributes->REQUEST_URIs)) . '/';
             $this->attributes->SERVER_DOCUMENT_ROOT = SERVER_NAME . $this->attributes->DOCUMENT_ROOT;
