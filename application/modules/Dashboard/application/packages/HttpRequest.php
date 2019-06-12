@@ -3,7 +3,7 @@
 /**
 *
 */
-class HttpRequest extends \database\SQLite {
+class HttpRequest extends \Database\SQLite {
 
     /**
     *
