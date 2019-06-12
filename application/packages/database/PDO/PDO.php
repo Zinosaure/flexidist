@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace Database;
+namespace database\PDO;
 
 /**
 *
@@ -13,7 +13,7 @@ final class PDO extends \PDO {
 	/**
 	*
 	*/
-	private $errors = [];
+	private $exception = [];
 	protected static $PDOs = [];
 
 	/**
@@ -75,7 +75,7 @@ final class PDO extends \PDO {
 			if (($sth->bindValues($params)) && $sth->execute()) 
 				return $sth;
 
-		$this->errors = [
+		$this->exception = [
 			$query_string => [
 				'PDO' => $this->errorInfo(),
 				'PDOStatement' => $sth ? $sth->errorInfo() : ['00000', null, null],
@@ -88,8 +88,8 @@ final class PDO extends \PDO {
 	/**
 	*
 	*/
-	final public function getErrors() {
-		return $this->errors;
+	final public function getException() {
+		return $this->exception;
 	}
 }
 ?>

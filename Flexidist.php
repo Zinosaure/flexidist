@@ -1,22 +1,21 @@
 <?php
 
 /**
- *
- */
+*
+*/
+declare(strict_types=1);
+session_start();
+
+define('ROOT_PACKAGES_PATH', __DIR__ . '/application/packages/');
+define('ROOT_MODULES_PATH', __DIR__ . '/application/modules/');
+
 spl_autoload_register(function(string $classname) {
-	foreach ([
-		__DIR__ . '/traits/',
-		__DIR__ . '/packages/',
-		APPLICATION_PATH . 'traits/',
-		APPLICATION_PATH . 'packages/',
-	] as $namespace)
+	foreach ([ROOT_PACKAGES_PATH, PACKAGES_PATH] as $namespace)
 		if (is_readable($filename = $namespace . str_replace('\\', '/', $classname) . '.php'))
 			return require_once $filename;
 
 	return false;
 });
-
-session_start();
 
 foreach([
 	'IS_LOCALHOST' =>
@@ -39,18 +38,20 @@ foreach([
 		dirname($_SERVER['SCRIPT_FILENAME']) . '/',
 	'APPLICATION_PATH' =>
 		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/',
-	'TEMPLATES_PATH' =>
-		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/templates/',
+	'MODULES_PATH' =>
+		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/modules/',
 	'PACKAGES_PATH' =>
 		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/packages/',
+	'TEMPLATES_PATH' =>
+		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/templates/',
 ] as $name => $value)
 	if (!defined($name))
 		define(strtoupper($name), $value);
 	
 foreach ([
 	APPLICATION_PATH,
+	APPLICATION_PATH . 'modules/',
 	APPLICATION_PATH . 'packages/',
-	APPLICATION_PATH . 'traits/',
 	APPLICATION_PATH . 'templates/',
 	APPLICATION_PATH . '../public/',
 	APPLICATION_PATH . '../public/css-js/',
@@ -65,10 +66,10 @@ foreach ([
 if (IS_LOCALHOST) {
 	error_reporting(E_ALL);
 
-	ini_set('html_errors', true);
+	ini_set('html_errors', 'On');
 	ini_set('display_errors', 'On');
 	ini_set('display_startup_errors', 'On');
-	ini_set('ignore_repeated_errors', false);
+	ini_set('ignore_repeated_errors', 'Off');
 } else {
 	error_reporting(E_ALL);
 

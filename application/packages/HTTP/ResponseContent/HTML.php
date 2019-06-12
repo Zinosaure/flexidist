@@ -8,16 +8,15 @@ namespace HTTP\ResponseContent;
 /**
 *
 */
-class HTML extends \Schema\Schema {
+class HTML extends \type_hints\Schema {
 
     /**
     *
     */
-
-    const SCHEMA_VALUE_MISMATCH_SET_NULL = false;
-    const SCHEMA_VALIDATE_ATTRIBUTES = [
-        'document' => self::SCHEMA_VALIDATE_IS_CONTENT,
-        'args' => self::SCHEMA_VALIDATE_IS_LIST,
+    const SCHEMA_FIELD_MISMATCH_SET_NULL = false;
+    const SCHEMA_FIELDS = [
+        'document' => self::SCHEMA_FIELD_IS_CONTENT,
+        'args' => self::SCHEMA_FIELD_IS_LIST,
     ];
 
     /**

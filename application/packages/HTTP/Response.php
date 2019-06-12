@@ -8,7 +8,7 @@ namespace HTTP;
 /**
 *
 */
-class Response extends \Schema\Schema {
+class Response extends \type_hints\Schema {
 
     /**
     *
@@ -77,11 +77,11 @@ class Response extends \Schema\Schema {
         510 => 'Not Extended',                                                // RFC2774
         511 => 'Network Authentication Required',                             // RFC6585
     ];
-    const SCHEMA_VALIDATE_ATTRIBUTES = [
-        'Content' => self::SCHEMA_VALIDATE_IS_CONTENT,
-        'status_code' => self::SCHEMA_VALIDATE_IS_INT,
-        'headers' => self::SCHEMA_VALIDATE_IS_OBJECT,
-        'set_cookies' => self::SCHEMA_VALIDATE_IS_OBJECT
+    const SCHEMA_FIELDS = [
+        'Content' => self::SCHEMA_FIELD_IS_CONTENT,
+        'status_code' => self::SCHEMA_FIELD_IS_INT,
+        'headers' => self::SCHEMA_FIELD_IS_OBJECT,
+        'set_cookies' => self::SCHEMA_FIELD_IS_OBJECT
     ];
     
     /**

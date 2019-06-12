@@ -8,28 +8,30 @@ namespace HTTP;
 /**
 *
 */
-class Request extends \Schema\Schema {
+class Request extends \type_hints\Schema {
 
     /**
     *
     */
-    const SCHEMA_VALUE_IS_READONLY = true;
-    const SCHEMA_VALIDATE_ATTRIBUTES = [
-        'Response' => self::SCHEMA_VALIDATE_IS_OBJECT_OF . __NAMESPACE__ . '\Response',
-        'servers' => self::SCHEMA_VALIDATE_IS_OBJECT,
-        'args' => self::SCHEMA_VALIDATE_IS_OBJECT,
-        'posts' => self::SCHEMA_VALIDATE_IS_OBJECT,
-        'cookies' => self::SCHEMA_VALIDATE_IS_OBJECT,
-        'sessions' => self::SCHEMA_VALIDATE_IS_OBJECT,
+    const SCHEMA_FIELD_IS_READONLY = true;
+    const SCHEMA_FIELDS = [
+        'Response' => self::SCHEMA_FIELD_IS_OBJECT_OF . __NAMESPACE__ . '\Response',
+        'servers' => self::SCHEMA_FIELD_IS_OBJECT,
+        'args' => self::SCHEMA_FIELD_IS_OBJECT,
+        'posts' => self::SCHEMA_FIELD_IS_OBJECT,
+        'cookies' => self::SCHEMA_FIELD_IS_OBJECT,
+        'sessions' => self::SCHEMA_FIELD_IS_OBJECT,
         'attributes' => [
-            'REQUEST_METHOD' => self::SCHEMA_VALIDATE_IS_STRING,
-            'DOCUMENT_ROOT' => self::SCHEMA_VALIDATE_IS_STRING,
-            'REQUEST_URI' => self::SCHEMA_VALIDATE_IS_STRING,
-            'REQUEST_QUERY_URI' => self::SCHEMA_VALIDATE_IS_STRING,
-            'REQUEST_URIs' => self::SCHEMA_VALIDATE_IS_LIST,
+            'REQUEST_METHOD' => self::SCHEMA_FIELD_IS_STRING,
+            'DOCUMENT_ROOT' => self::SCHEMA_FIELD_IS_STRING,
+            'SERVER_DOCUMENT_ROOT' => self::SCHEMA_FIELD_IS_STRING,
+            'REQUEST_URI' => self::SCHEMA_FIELD_IS_STRING,
+            'REQUEST_QUERY_URI' => self::SCHEMA_FIELD_IS_STRING,
+            'REQUEST_URIs' => self::SCHEMA_FIELD_IS_LIST,
         ],
     ];
 
+    protected static $instance = null;
     protected $http_requests = [
         '*'         => [],
         'GET'       => [],
@@ -46,11 +48,21 @@ class Request extends \Schema\Schema {
     /**
     *
     */
-    public function __construct($Content = null, ?Response $Response = null) {
+    public static function create(): self {
+        if (!self::$instance)
+            self::$instance = new self();
+
+        return self::$instance;
+    }
+
+    /**
+    *
+    */
+    protected function __construct() {
         ($session_started = session_status() != PHP_SESSION_NONE) ? null : session_start();
 
         parent::__construct([
-            'Response' => $Response ?? new Response($Content),
+            'Response' => new Response(),
             'servers' => (object) $_SERVER,
             'args' => (object) $_GET,
             'posts' => (object) $_POST,
@@ -59,6 +71,7 @@ class Request extends \Schema\Schema {
             'attributes' => [
                 'REQUEST_METHOD' => strtoupper($_SERVER['REQUEST_METHOD']),
                 'DOCUMENT_ROOT' => DOCUMENT_ROOT,
+                'SERVER_DOCUMENT_ROOT' => SERVER_NAME . DOCUMENT_ROOT,
                 'REQUEST_URI' => REQUEST_URI,
                 'REQUEST_QUERY_URI' => REQUEST_QUERY_URI,
                 'REQUEST_URIs' => explode('/', REQUEST_URI),
@@ -158,6 +171,31 @@ class Request extends \Schema\Schema {
                 return $execute ? $this->execute($callback, $args) : true;
         }
 
+        return false;
+    }
+
+    /**
+    *
+    */
+    public function load_module(string $module_name) {
+        foreach ([ROOT_MODULES_PATH, MODULES_PATH] as $module_space) {
+            if (is_readable($filename = sprintf('%s%s/index.php', $module_space, $module_name))) {
+                spl_autoload_register(function(string $classname) use ($filename) {
+                    if (is_readable($filename = sprintf('%s/application/packages/%s.php', dirname($filename), str_replace('\\', '/', $classname))))
+                        return require_once $filename;
+                
+                    return false;
+                });
+
+                $this->attributes->DOCUMENT_ROOT = $this->attributes->DOCUMENT_ROOT . ($root = array_shift($this->attributes->REQUEST_URIs)) . '/';
+                $this->attributes->SERVER_DOCUMENT_ROOT = SERVER_NAME . $this->attributes->DOCUMENT_ROOT;
+                $this->attributes->REQUEST_URI = preg_replace('/^' . $root . '\//', null, $this->attributes->REQUEST_URI);
+                $this->attributes->REQUEST_QUERY_URI = preg_replace('/^' . $root . '\//', null, $this->attributes->REQUEST_QUERY_URI);
+    
+                return require_once $filename;
+            }
+        }
+    
         return false;
     }
 }
