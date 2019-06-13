@@ -8,7 +8,7 @@ namespace database;
 /**
 *
 */
-abstract class SQLite extends \TypeHint\Schema {
+abstract class SQLite extends \Schema {
 
     /**
     *

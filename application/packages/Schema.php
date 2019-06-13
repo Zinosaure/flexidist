@@ -3,11 +3,6 @@
 /**
 *
 */
-namespace TypeHint;
-
-/**
-*
-*/
 
 class Schema {
     
@@ -17,6 +12,8 @@ class Schema {
     const SCHEMA_FIELD_IS_READONLY = false;
     const SCHEMA_FIELD_MISMATCH_SET_NULL = true;
 
+    const SCHEMA_FIELD_IS_FILE = 'is_file';
+    const SCHEMA_FIELD_IS_DIRECTORY = 'is_dir';
     const SCHEMA_FIELD_IS_CONTENT = 'is_content';
     const SCHEMA_FIELD_IS_STRING = 'is_string';
     const SCHEMA_FIELD_IS_NUMERIC = 'is_numeric';
@@ -38,7 +35,7 @@ class Schema {
     *
     */
     public function __construct($data = [], array $schema_fields = []) {
-        $this->__schema_fields = array_replace_recursive(static::SCHEMA_FIELDS, $schema_fields);
+        $this->__schema_fields = $schema_fields ?: static::SCHEMA_FIELDS;
 
         if (is_string($data) && ($json_decode = json_decode($data, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
             $data = $json_decode;
@@ -54,9 +51,13 @@ class Schema {
                     $this->__values[$field][] = new self($temp_data, $temp_is);
             } else if (is_array($is))
                 $this->__values[$field] = new self($data[$field] ?? [], $is);
+            else if ($is === self::SCHEMA_FIELD_IS_FILE && file_exists($value = $data[$field] ?? null) && is_file($value))
+                $this->__values[$field] = $value;
+            else if ($is === self::SCHEMA_FIELD_IS_DIRECTORY && file_exists($value = $data[$field] ?? null) && is_dir($value))
+                $this->__values[$field] = $value;
             else if ($is === self::SCHEMA_FIELD_IS_CONTENT
                 && (is_string($value = $data[$field] ?? null) || is_numeric($value) || is_callable([$value, '__toString'])))
-                $this->__values[$field] = $value;
+                $this->__values[$field] = file_exists($value) && is_file($value) ? file_get_contents($value) : $value;
             else if ($is === self::SCHEMA_FIELD_IS_STRING && is_string($value = $data[$field] ?? null))
                 $this->__values[$field] = $value;
             else if ($is === self::SCHEMA_FIELD_IS_NUMERIC && is_numeric($value = $data[$field] ?? null))
@@ -103,13 +104,17 @@ class Schema {
         if (is_array($is) && is_array($temp_is = current($is))) {
             $this->__values[$field] = [];
 
-            foreach ($data[$field] ?? [] as $temp_data)
+            foreach ($mixed_value ?? [] as $temp_data)
                 $this->__values[$field][] = new self($temp_data, $temp_is);
         } else if (is_array($is))
-            $this->__values[$field] = new self($data[$field] ?? [], $is);
+            $this->__values[$field] = new self($mixed_value ?? [], $is);
+        else if ($is === self::SCHEMA_FIELD_IS_FILE && file_exists($value = $mixed_value ?? null) && is_file($value))
+            $this->__values[$field] = $value;
+        else if ($is === self::SCHEMA_FIELD_IS_DIRECTORY && file_exists($value = $mixed_value ?? null) && is_dir($value))
+            $this->__values[$field] = $value;
         else if ($is === self::SCHEMA_FIELD_IS_CONTENT
             && (is_string($value = $mixed_value ?? null) || is_numeric($value) || is_callable([$value, '__toString'])))
-            $this->__values[$field] = $value;
+            $this->__values[$field] = file_exists($value) && is_file($value) ? file_get_contents($value) : $value;
         else if ($is === self::SCHEMA_FIELD_IS_STRING && is_string($value = $mixed_value ?? null))
             $this->__values[$field] = $value;
         else if ($is === self::SCHEMA_FIELD_IS_NUMERIC && is_numeric($value = $mixed_value ?? null))
@@ -127,7 +132,7 @@ class Schema {
         else if (strpos($is, self::SCHEMA_FIELD_IS_LIST_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_FIELD_IS_LIST_OF, null, $is))) {
             $this->__values[$field] = [];
 
-            foreach ($data[$field] ?? [] as $temp_data)
+            foreach ($mixed_value ?? [] as $temp_data)
                 $this->__values[$field][] = new $class_name($temp_data);
         } else if (strpos($is, self::SCHEMA_FIELD_IS_OBJECT_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_FIELD_IS_OBJECT_OF, null, $is))) {
             if (is_object($value = $mixed_value ?? null) && $value instanceOf $class_name)

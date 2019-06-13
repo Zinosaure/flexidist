@@ -8,7 +8,7 @@ namespace ServerHttp;
 /**
 *
 */
-class Response extends \TypeHint\Schema {
+class Response extends \Schema {
 
     /**
     *
@@ -96,6 +96,16 @@ class Response extends \TypeHint\Schema {
             ], $headers),
             'set_cookies' => new \StdClass(),
         ]);
+    }
+
+    /**
+    *
+    */
+    public function __toString(): string {
+        ob_start();
+            $this->send();
+        
+        return ob_get_clean();
     }
 
     /**

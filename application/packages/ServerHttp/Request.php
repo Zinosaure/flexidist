@@ -8,7 +8,7 @@ namespace ServerHttp;
 /**
 *
 */
-class Request extends \TypeHint\Schema {
+class Request extends \Schema {
 
     /**
     *
@@ -24,9 +24,11 @@ class Request extends \TypeHint\Schema {
         'attributes' => [
             'REQUEST_METHOD' => self::SCHEMA_FIELD_IS_STRING,
             'DOCUMENT_ROOT' => self::SCHEMA_FIELD_IS_STRING,
-            'SERVER_DOCUMENT_ROOT' => self::SCHEMA_FIELD_IS_STRING,
             'REQUEST_URI' => self::SCHEMA_FIELD_IS_STRING,
             'REQUEST_QUERY_URI' => self::SCHEMA_FIELD_IS_STRING,
+            'SERVER_DOCUMENT_ROOT' => self::SCHEMA_FIELD_IS_STRING,
+            'FULL_REQUEST_URI' => self::SCHEMA_FIELD_IS_STRING,
+            'FULL_REQUEST_QUERY_URI' => self::SCHEMA_FIELD_IS_STRING,
             'REQUEST_URIs' => self::SCHEMA_FIELD_IS_LIST,
         ],
     ];
@@ -47,7 +49,7 @@ class Request extends \TypeHint\Schema {
     /**
     *
     */
-    public function __construct(bool $change_base = false) {
+    public function __construct(?string $next_root = null, string $public_dirname = null) {
         ($session_started = session_status() != PHP_SESSION_NONE) ? null : session_start();
 
         parent::__construct([
@@ -59,40 +61,18 @@ class Request extends \TypeHint\Schema {
             'sessions' => (object) ($session_started ? $_SESSION : []),
             'attributes' => [
                 'REQUEST_METHOD' => strtoupper($_SERVER['REQUEST_METHOD']),
-                'DOCUMENT_ROOT' => DOCUMENT_ROOT,
-                'SERVER_DOCUMENT_ROOT' => SERVER_NAME . DOCUMENT_ROOT,
-                'REQUEST_URI' => REQUEST_URI,
-                'REQUEST_QUERY_URI' => REQUEST_QUERY_URI,
-                'REQUEST_URIs' => explode('/', REQUEST_URI),
+                'DOCUMENT_ROOT' => $DOCUMENT_ROOT = str_replace('//', '/', DOCUMENT_ROOT . ($next_root = trim($next_root, '/') . '/')),
+                'REQUEST_URI' => $REQUEST_URI = preg_replace('/^' . preg_quote($next_root, '/') . '/', null, REQUEST_URI),
+                'REQUEST_QUERY_URI' => $REQUEST_QUERY_URI = preg_replace('/^' . preg_quote($next_root, '/') . '/', null, REQUEST_QUERY_URI),
+                'SERVER_DOCUMENT_ROOT' => SERVER_NAME . $DOCUMENT_ROOT,
+                'FULL_REQUEST_URI' => SERVER_NAME . $DOCUMENT_ROOT . $REQUEST_URI,
+                'FULL_REQUEST_QUERY_URI' => SERVER_NAME . $DOCUMENT_ROOT . $REQUEST_QUERY_URI,
+                'REQUEST_URIs' => explode('/', trim($REQUEST_URI, '/')),
             ],
         ]);
 
-        $this->map('get', 'rsrc/(string:module_name)/*:filename', function(string $module_name, string $filename) {
-            if (is_dir($filename = ROOT_MODULES_PATH . preg_replace('/^rsrc\//', null, REQUEST_URI)) || !file_exists($filename))
-                $this->Response->status_code = 404;
-
-            $mime_type = 'application/octet-stream';
-                
-            if (array_key_exists($extension = strtolower(@array_pop(explode('.', $filename))), $mime_types = [
-                'css' => 'text/css',
-                'js' =>  'application/javascript',
-                'png' => 'image/png',
-                'jpg' => 'image/jpeg',
-                'gif' => 'image/gif',
-            ]))
-                $mime_type = $mime_types[$extension];
-                
-            $this->Response->headers->{'Content-Type'} = $mime_type;
-            $this->Response->Content = @file_get_contents($filename);
-            $this->Response->send();
-        });
-
-        if ($change_base) {
-            $this->attributes->DOCUMENT_ROOT = $this->attributes->DOCUMENT_ROOT . ($root = array_shift($this->attributes->REQUEST_URIs)) . '/';
-            $this->attributes->SERVER_DOCUMENT_ROOT = SERVER_NAME . $this->attributes->DOCUMENT_ROOT;
-            $this->attributes->REQUEST_URI = preg_replace('/^' . $root . '\//', null, $this->attributes->REQUEST_URI);
-            $this->attributes->REQUEST_QUERY_URI = preg_replace('/^' . $root . '\//', null, $this->attributes->REQUEST_QUERY_URI);
-        }
+        if ($public_dirname)
+            $this->mapPublicResources($public_dirname);
     }
 
     /**
@@ -121,6 +101,52 @@ class Request extends \TypeHint\Schema {
         	$this->http_requests[strtoupper(trim($method))][$pattern] = $callback;
  
         return $this;
+    }
+
+    /**
+    *
+    */
+    public function mapPublicResources(string $dirname) {
+        $this->map('get', 'public/*:filename', function(string $filename) use ($dirname) {
+            if (!file_exists($filename = $dirname . '/public/' . $filename) || !is_file($filename)) {
+                $this->Response->status_code = 404;
+
+                return $this->Response->send();
+            }
+
+            $mime_type = 'application/octet-stream';
+            $mime_types = json_decode(file_get_contents(__DIR__ . '/mime_types.json'), JSON_OBJECT_AS_ARRAY);
+                
+            if (array_key_exists($extension = strtolower(@array_pop(explode('.', $filename))), $mime_types))
+                $mime_type = $mime_types[$extension];
+            
+            $this->Response->headers->{'Content-Type'} = $mime_type;
+            $this->Response->Content = @file_get_contents($filename);
+            
+            return $this->Response->send();
+        });
+    }
+
+    /**
+    *
+    */
+    public function mapForwardRequest(string $methods, string $pattern, string $contrib_name): self {
+        return $this->map($methods, $pattern, function() use ($contrib_name) {
+            foreach ([APPLICATION_PATH . 'maps', FLEXIDIST_APPLICATION_PATH . 'maps'] as $contrib_space) {
+                if (is_readable($filename = sprintf('%s/%s/index.php', $contrib_space, $contrib_name))) {
+                    spl_autoload_register(function(string $classname) use ($filename) {
+                        if (is_readable($filename = sprintf('%s/application/packages/%s.php', dirname($filename), str_replace('\\', '/', $classname))))
+                            return require_once $filename;
+                    
+                        return false;
+                    });
+    
+                    return require_once $filename;
+                }
+            }
+        
+            return false;
+        });
     }
 
     /**
@@ -187,28 +213,6 @@ class Request extends \TypeHint\Schema {
                 return $execute ? $this->execute($callback, $args) : true;
         }
 
-        return false;
-    }
-
-    /**
-    *
-    */
-    final public static function checkout(string $module_name) {
-        foreach ([ROOT_MODULES_PATH, MODULES_PATH] as $module_space) {
-            if (is_readable($filename = sprintf('%s%s/index.php', $module_space, $module_name))) {
-                spl_autoload_register(function(string $classname) use ($filename) {
-                    if (is_readable($filename = sprintf('%s/application/packages/%s.php', dirname($filename), str_replace('\\', '/', $classname))))
-                        return require_once $filename;
-                
-                    return false;
-                });
-                
-                $TEMPLATES_PATH = sprintf('%s/application/templates/', dirname($filename));
-
-                return require_once $filename;
-            }
-        }
-    
         return false;
     }
 }
