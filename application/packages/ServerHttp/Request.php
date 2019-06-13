@@ -115,9 +115,8 @@ class Request extends \Schema {
             }
 
             $mime_type = 'application/octet-stream';
-            $mime_types = json_decode(file_get_contents(__DIR__ . '/mime_types.json'), JSON_OBJECT_AS_ARRAY);
                 
-            if (array_key_exists($extension = strtolower(@array_pop(explode('.', $filename))), $mime_types))
+            if (array_key_exists($extension = strtolower(@array_pop(explode('.', $filename))), $mime_types = require_once __DIR__ . '/mime_types.php'))
                 $mime_type = $mime_types[$extension];
             
             $this->Response->headers->{'Content-Type'} = $mime_type;
