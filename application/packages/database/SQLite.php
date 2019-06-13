@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace database;
+namespace Database;
 
 /**
 *
@@ -119,10 +119,10 @@ abstract class SQLite extends \Schema {
     */
     final public function match(array $params = [], int $offset = -1, int $length = 20, bool $asc_order = true): array {
         $query_string = sprintf(
-			'SELECT * FROM %s %s %s %s;', 
+			'SELECT * FROM %s %s %s %s;',
 				static::SQLITE_TABLE_NAME,
 				!empty($params) ? 'WHERE ' . implode(' = ? AND ', array_keys($params)) . ' = ?' : null,
-                static::SQLITE_PRIMARY_KEY ? sprintf('ORDER BY %s %s', static::SQLITE_PRIMARY_KEY, $asc_order ? 'ASC' : 'DESC') : null, 
+                static::SQLITE_PRIMARY_KEY ? sprintf('ORDER BY %s %s', static::SQLITE_PRIMARY_KEY, $asc_order ? 'ASC' : 'DESC') : null,
 				$offset > -1 ? 'LIMIT ?, ?' : null
         );
 

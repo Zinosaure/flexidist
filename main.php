@@ -8,7 +8,7 @@ session_start();
 
 spl_autoload_register(function(string $classname) {
 	foreach ([
-		FLEXIDIST_PACKAGES_PATH, 
+		FLEXIDIST_PACKAGES_PATH,
 		PACKAGES_PATH
 	] as $namespace)
 		if (is_readable($filename = $namespace . str_replace('\\', '/', $classname) . '.php'))
@@ -32,9 +32,9 @@ foreach([
 	'REQUEST_QUERY_URI' =>
 		substr(str_replace($DOCUMENT_ROOT, ($DOCUMENT_ROOT != '/') ? null : '/', $_SERVER['REQUEST_URI']), 1),
 
-	'FLEXIDIST_APPLICATION_PATH' => 
+	'FLEXIDIST_APPLICATION_PATH' =>
 		__DIR__ . '/application/',
-	'FLEXIDIST_PACKAGES_PATH' => 
+	'FLEXIDIST_PACKAGES_PATH' =>
 		__DIR__ . '/application/packages/',
 	'APPLICATION_PATH' =>
 		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/',
@@ -46,7 +46,7 @@ foreach([
 
 foreach ([
 	APPLICATION_PATH,
-	APPLICATION_PATH . 'maps/',
+	APPLICATION_PATH . 'exts/',
 	APPLICATION_PATH . 'packages/',
 	APPLICATION_PATH . '../public/',
 ] as $dirname) {

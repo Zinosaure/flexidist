@@ -3,12 +3,12 @@
 /**
 *
 */
-namespace ServerHttp\ResponseContent;
+namespace ServerHttp\Response;
 
 /**
 *
 */
-class TemplateEngine extends \Schema {
+class Content extends \Schema {
 
     /**
     *

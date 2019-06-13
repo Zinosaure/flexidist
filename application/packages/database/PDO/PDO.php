@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace database\PDO;
+namespace Database\PDO;
 
 /**
 *
@@ -20,7 +20,7 @@ final class PDO extends \PDO {
 	*
 	*/
 	final protected function __construct(string $dsn, string $username = 'root', string $password = null, array $options = []) {
-		$options = array_replace_recursive([			
+		$options = array_replace_recursive([
 			\PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
 			\PDO::ATTR_EMULATE_PREPARES => true,
 			\PDO::ATTR_ERRMODE => \PDO::ERRMODE_SILENT,
@@ -46,7 +46,7 @@ final class PDO extends \PDO {
 				\PDO::ATTR_AUTOCOMMIT => true,
 				\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES "utf8"',
 				\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => false,
-				\PDO::MYSQL_ATTR_FOUND_ROWS => true,	
+				\PDO::MYSQL_ATTR_FOUND_ROWS => true,
 			], $options)
 		);
 	}
@@ -72,7 +72,7 @@ final class PDO extends \PDO {
 	*/
 	final public function execute(string $query_string, array $params = [], array $options = []) {
 		if ($sth = $this->prepare($query_string, $options))
-			if (($sth->bindValues($params)) && $sth->execute()) 
+			if (($sth->bindValues($params)) && $sth->execute())
 				return $sth;
 
 		$this->exception = [

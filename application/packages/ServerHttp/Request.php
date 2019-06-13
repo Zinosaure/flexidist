@@ -15,7 +15,6 @@ class Request extends \Schema {
     */
     const SCHEMA_FIELD_IS_READONLY = true;
     const SCHEMA_FIELDS = [
-        'Response' => self::SCHEMA_FIELD_IS_OBJECT_OF . __NAMESPACE__ . '\Response',
         'servers' => self::SCHEMA_FIELD_IS_OBJECT,
         'args' => self::SCHEMA_FIELD_IS_OBJECT,
         'posts' => self::SCHEMA_FIELD_IS_OBJECT,
@@ -32,19 +31,6 @@ class Request extends \Schema {
             'REQUEST_URIs' => self::SCHEMA_FIELD_IS_LIST,
         ],
     ];
-    
-    protected $http_requests = [
-        '*'         => [],
-        'GET'       => [],
-        'POST'      => [],
-        'PUT'       => [],
-        'UPDATE'    => [],
-        'DELETE'    => [],
-        'PATCH'     => [],
-        'OPTIONS'   => [],
-        'CONNECT'   => [],
-        'TRACE'     => [],
-    ];
 
     /**
     *
@@ -53,7 +39,6 @@ class Request extends \Schema {
         ($session_started = session_status() != PHP_SESSION_NONE) ? null : session_start();
 
         parent::__construct([
-            'Response' => new Response(),
             'servers' => (object) $_SERVER,
             'args' => (object) $_GET,
             'posts' => (object) $_POST,
@@ -93,15 +78,7 @@ class Request extends \Schema {
         exit(header('Location: ' . $url, false, $status_code));
     }
 
-    /**
-    *
-    */
-    public function map(string $methods, string $pattern, \Closure $callback): self {
-        foreach(explode('|', $methods) as $method)
-        	$this->http_requests[strtoupper(trim($method))][$pattern] = $callback;
- 
-        return $this;
-    }
+    
 
     /**
     *
@@ -146,73 +123,6 @@ class Request extends \Schema {
         
             return false;
         });
-    }
-
-    /**
-    *
-    */
-    public function execute(\Closure $callback, array $args = []) {
-        $callback = \Closure::bind($callback, $this, get_class());
-
-        foreach ((new \ReflectionFunction($callback))->getParameters() as $param)
-            if (($param_type = $param->getType()) && !in_array($class_name = $param_type->getName(), ['int', 'string']))
-                $args[$param->getName()] = new $class_name($args[$param->getName()]);
- 
-        return call_user_func_array($callback, $args) || true;
-    }
-
-    /**
-    *
-    */
-    public function listen(?string $REQUEST_URI = null, ?string $REQUEST_METHOD = null, bool $execute = true): bool {
-        $REQUEST_METHOD = strtoupper($REQUEST_METHOD) ?: $this->attributes->REQUEST_METHOD;
-        $REQUEST_URI = $REQUEST_URI ?: $this->attributes->REQUEST_URI;
-        $REQUEST_URIs = $REQUEST_URI ? explode('/', $REQUEST_URI) : $this->attributes->REQUEST_URIs;
-        
-        foreach(array_replace($this->http_requests['*'], $this->http_requests[$REQUEST_METHOD]) as $pattern => $callback) {
-            $args = [];
-            $is_matched = true;
-            $is_no_limit = false;
- 
-            if ($REQUEST_URI == $pattern
-                || (preg_match('/^\/.+\/[a-z]*$/i', $pattern)
-                        && preg_match($pattern, $REQUEST_URI, $args)))
-                return $execute ? $this->execute($callback, $args) : true;
- 
-            foreach(array_map(
-                function($value) {
-                    preg_match('/(\?)?(string|int|rgex|\*)?\:([a-zA-Z0-9_]*)/is', $value, $match);
- 
-                    return $match
-                        ? ['is_required' => $match[1] != '?', 'var_type' => $match[2], 'var_name' => $match[3], 'value' => null]
-                            : ['is_required' => true, 'var_type' => null, 'var_name' => $value, 'value' => $value];
-                }, explode('/', $pattern)) as $i => $options) {
-                    $value = $REQUEST_URIs[$i] ?? null;
- 
-                    if ($options['is_required']) {
-                        if (!($is_matched = !is_null($value)))
-                            break;
-                        else if (!$options['var_type'] && !($is_matched = $options['value'] == $value))
-                            break;
-                    } else if (!$options['is_required'] && is_null($args[$options['var_name']] = $value))
-                        continue;
- 
-                    if ($is_no_limit = (strtolower($options['var_type']) == '*'))
-                        $value = implode('/', array_slice($REQUEST_URIs, $i));
-                    else if (strtolower($options['var_type']) == 'string' && !($is_matched = is_string($value)))
-                        break;
-                    else if (strtolower($options['var_type']) == 'int' && !($is_matched = is_numeric($value)))
-                        break;
- 
-                    if ($options['var_type'])
-                        $args[$options['var_name']] = $value;
-            }
- 
-            if ($is_matched && !(!$is_no_limit && substr_count($REQUEST_URI, '/') > substr_count($pattern, '/')))
-                return $execute ? $this->execute($callback, $args) : true;
-        }
-
-        return false;
     }
 }
 ?>
