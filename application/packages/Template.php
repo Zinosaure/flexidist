@@ -3,12 +3,7 @@
 /**
 *
 */
-namespace ServerHttp\Response;
-
-/**
-*
-*/
-class Content extends \Schema {
+class Template extends \Schema {
 
     /**
     *

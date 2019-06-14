@@ -30,12 +30,12 @@ class RouterHttp extends \Schema {
     /**
     *
     */
-    public function __construct(?string $next_root = null, string $public_dirname = null) {
+    public function __construct() {
         ($session_started = session_status() != PHP_SESSION_NONE) ? null : session_start();
 
         parent::__construct([
-            'Request' => new \ServerHttp\Request(),
-            'Response' => new \ServerHttp\Response(),
+            'Request' => new \RouterHttp\Request(),
+            'Response' => new \RouterHttp\Response(),
         ]);
     }
     
@@ -49,6 +49,15 @@ class RouterHttp extends \Schema {
         return $this;
     }
     
+    /**
+    *
+    */
+    public function attach(string $api, string $prefix = null) {
+        $classname = sprintf('apis\%s\RouterHttp', $api);
+
+        return new $classname($this, $prefix);
+    }
+
     /**
     *
     */

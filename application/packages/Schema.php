@@ -3,9 +3,8 @@
 /**
 *
 */
-
 class Schema {
-    
+
     /**
     *
     */
@@ -19,12 +18,13 @@ class Schema {
     const SCHEMA_FIELD_IS_NUMERIC = 'is_numeric';
     const SCHEMA_FIELD_IS_INT = 'is_int';
     const SCHEMA_FIELD_IS_INTEGER = 'is_int';
+    const SCHEMA_FIELD_IS_BOOL = 'is_bool';
     const SCHEMA_FIELD_IS_BOOLEAN = 'is_bool';
-    const SCHEMA_FIELD_IS_LIST = 'is_array';
     const SCHEMA_FIELD_IS_OBJECT = 'is_object';
-    const SCHEMA_FIELD_IS_SCHEMA = 'is_schema';
-    const SCHEMA_FIELD_IS_LIST_OF = 'is_list_of:';
-    const SCHEMA_FIELD_IS_OBJECT_OF = 'is_object_of:';
+    const SCHEMA_FIELD_IS_LIST = 'is_array';
+    const SCHEMA_FIELD_IS_LIST_OF = 'is_array_of:';
+    const SCHEMA_FIELD_IS_INSTANCE_OF = 'is_instance_of:';
+    const SCHEMA_FIELD_IS_SCHEMA = 'is_schema:';
 
     const SCHEMA_FIELDS = [];
 
@@ -35,114 +35,93 @@ class Schema {
     *
     */
     public function __construct($data = [], array $schema_fields = []) {
-        $this->__schema_fields = $schema_fields ?: static::SCHEMA_FIELDS;
-
         if (is_string($data) && ($json_decode = json_decode($data, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
             $data = $json_decode;
+
+        if ($data instanceOf self)
+            $data = $data->__values;
 
         if (!is_array($data))
             $data = [];
 
-        foreach ($this->__schema_fields as $field => $is) {
-            if (is_array($is) && is_array($temp_is = current($is))) {
-                $this->__values[$field] = [];
-
-                foreach ($data[$field] ?? [] as $temp_data)
-                    $this->__values[$field][] = new self($temp_data, $temp_is);
-            } else if (is_array($is))
-                $this->__values[$field] = new self($data[$field] ?? [], $is);
-            else if ($is === self::SCHEMA_FIELD_IS_FILE && file_exists($value = $data[$field] ?? null) && is_file($value))
-                $this->__values[$field] = $value;
-            else if ($is === self::SCHEMA_FIELD_IS_DIRECTORY && file_exists($value = $data[$field] ?? null) && is_dir($value))
-                $this->__values[$field] = $value;
-            else if ($is === self::SCHEMA_FIELD_IS_CONTENT
-                && (is_string($value = $data[$field] ?? null) || is_numeric($value) || is_callable([$value, '__toString'])))
-                $this->__values[$field] = file_exists($value) && is_file($value) ? file_get_contents($value) : $value;
-            else if ($is === self::SCHEMA_FIELD_IS_STRING && is_string($value = $data[$field] ?? null))
-                $this->__values[$field] = $value;
-            else if ($is === self::SCHEMA_FIELD_IS_NUMERIC && is_numeric($value = $data[$field] ?? null))
-                $this->__values[$field] = $value;
-            else if (($is === self::SCHEMA_FIELD_IS_INTEGER || $is === self::SCHEMA_FIELD_IS_INT) && is_int($value = $data[$field] ?? null))
-                $this->__values[$field] = $value;
-            else if ($is === self::SCHEMA_FIELD_IS_BOOLEAN && is_bool($value = $data[$field] ?? null))
-                $this->__values[$field] = $value;
-            else if ($is === self::SCHEMA_FIELD_IS_LIST && is_array($value = $data[$field] ?? []))
-                $this->__values[$field] = $value;
-            else if ($is === self::SCHEMA_FIELD_IS_OBJECT && is_object($value = $data[$field] ?? (object) []))
-                $this->__values[$field] = $value;
-            else if ($is === self::SCHEMA_FIELD_IS_SCHEMA && is_object($value = $data[$field] ?? (object) []) && $value instanceOf self)
-                $this->__values[$field] = $value;
-            else if (strpos($is, self::SCHEMA_FIELD_IS_LIST_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_FIELD_IS_LIST_OF, null, $is))) {
-                $this->__values[$field] = [];
-
-                foreach ($data[$field] ?? [] as $temp_data)
-                    $this->__values[$field][] = new $class_name($temp_data);
-            } else if (strpos($is, self::SCHEMA_FIELD_IS_OBJECT_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_FIELD_IS_OBJECT_OF, null, $is))) {
-                if (is_object($value = $data[$field] ?? null) && $value instanceOf $class_name)
-                    $this->__values[$field] = $value;
+        foreach ($schema_fields ?: static::SCHEMA_FIELDS as $field => $field_type) {
+            if ((preg_match('/\[\]$/', $field) && $field = preg_replace('/(\[\])$/', null, $field))) {
+                if (is_array($field_type))
+                    $this->__schema_fields[$field] = self::SCHEMA_FIELD_IS_LIST_OF . self::SCHEMA_FIELD_IS_SCHEMA . json_encode($field_type);
                 else
-                    $this->__values[$field] = new $class_name($value);
-            } else
-                $this->__values[$field] = null;
+                    $this->__schema_fields[$field] = self::SCHEMA_FIELD_IS_LIST_OF . $field_type;
+            } else if (is_array($field_type))
+                $this->__schema_fields[$field] = self::SCHEMA_FIELD_IS_SCHEMA . json_encode($field_type);
+            else
+                $this->__schema_fields[$field] = $field_type;
+
+
+            $this->{$field} = $data[$field] ?? null;
         }
     }
-
+    
     /**
     *
     */
     final public function &__get(string $field) {
+        if (is_array($list = $this->__values[$field]))
+            return $list;
+        
         return $this->__values[$field];
     }
-    
+
     /**
     *
     */
-    final public function __set(string $field, $mixed_value) {
-        if (static::SCHEMA_FIELD_IS_READONLY || !$is = $this->__schema_fields[$field] ?? null)
+    public function __set(string $field, $mixed_value) {
+        if ((static::SCHEMA_FIELD_IS_READONLY && isset($this->__values[$field]))|| !$field_type = $this->__schema_fields[$field] ?? null)
             return;
-            
-        if (is_array($is) && is_array($temp_is = current($is))) {
-            $this->__values[$field] = [];
-
-            foreach ($mixed_value ?? [] as $temp_data)
-                $this->__values[$field][] = new self($temp_data, $temp_is);
-        } else if (is_array($is))
-            $this->__values[$field] = new self($mixed_value ?? [], $is);
-        else if ($is === self::SCHEMA_FIELD_IS_FILE && file_exists($value = $mixed_value ?? null) && is_file($value))
+        
+        if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_LIST_OF . self::SCHEMA_FIELD_IS_SCHEMA) !== false 
+                && ($schema_fields = str_replace($search, null, $field_type)) && is_array($mixed_value)) {
+            $this->__values[$field] = array_map(function($value) use ($schema_fields) {
+                return new self($value, json_decode($schema_fields, JSON_OBJECT_AS_ARRAY));
+            }, $mixed_value ?? []);
+        } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_SCHEMA) !== false 
+                && ($schema_fields = str_replace($search, null, $field_type)) && is_array($mixed_value)) {
+            $this->__values[$field] = new self($mixed_value, json_decode($schema_fields, JSON_OBJECT_AS_ARRAY));
+        } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_LIST_OF . self::SCHEMA_FIELD_IS_INSTANCE_OF) !== false 
+                && ($classname = str_replace($search, null, $field_type)) && is_array($mixed_value)) {
+            $this->__values[$field] = array_map(function($value) use ($classname) {
+                return class_exists($classname) && ($value instanceOf $classname || (is_array($value) && ($value = new $classname($value)))) ? $value : null;
+            }, $mixed_value ?? []);
+        } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_INSTANCE_OF) !== false 
+                && $classname = str_replace($search, null, $field_type)) {
+            if ($mixed_value instanceOf $classname || (is_array($mixed_value) && ($mixed_value = new $classname($mixed_value))))
+                $this->__values[$field] = $mixed_value;
+        } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_LIST_OF) !== false 
+                && ($typeof = str_replace($search, null, $field_type)) && is_array($mixed_value)) {
+            $this->__values[$field] = array_map(function($value) use ($typeof) {
+                return is_callable($typeof) && $typeof($value) ? $value : null;
+            }, $mixed_value ?? []);
+        } else if ($field_type === self::SCHEMA_FIELD_IS_LIST && is_array($value = $mixed_value ?? []))
             $this->__values[$field] = $value;
-        else if ($is === self::SCHEMA_FIELD_IS_DIRECTORY && file_exists($value = $mixed_value ?? null) && is_dir($value))
+        else if ($field_type === self::SCHEMA_FIELD_IS_FILE && file_exists($value = $mixed_value ?? null) && is_file($value))
             $this->__values[$field] = $value;
-        else if ($is === self::SCHEMA_FIELD_IS_CONTENT
-            && (is_string($value = $mixed_value ?? null) || is_numeric($value) || is_callable([$value, '__toString'])))
+        else if ($field_type === self::SCHEMA_FIELD_IS_DIRECTORY && file_exists($value = $mixed_value ?? null) && is_dir($value))
+            $this->__values[$field] = $value;
+        else if ($field_type === self::SCHEMA_FIELD_IS_CONTENT
+                && (is_string($value = $mixed_value ?? null) || is_numeric($value) || is_callable([$value, '__toString'])))
             $this->__values[$field] = file_exists($value) && is_file($value) ? file_get_contents($value) : $value;
-        else if ($is === self::SCHEMA_FIELD_IS_STRING && is_string($value = $mixed_value ?? null))
+        else if ($field_type === self::SCHEMA_FIELD_IS_STRING && is_string($value = $mixed_value ?? null))
             $this->__values[$field] = $value;
-        else if ($is === self::SCHEMA_FIELD_IS_NUMERIC && is_numeric($value = $mixed_value ?? null))
+        else if ($field_type === self::SCHEMA_FIELD_IS_NUMERIC && is_numeric($value = $mixed_value ?? null))
             $this->__values[$field] = $value;
-        else if (($is === self::SCHEMA_FIELD_IS_INTEGER || $is === self::SCHEMA_FIELD_IS_INT) && is_int($value = $mixed_value ?? null))
+        else if (($field_type === self::SCHEMA_FIELD_IS_INTEGER || $field_type === self::SCHEMA_FIELD_IS_INT) && is_int($value = $mixed_value ?? null))
             $this->__values[$field] = $value;
-        else if ($is === self::SCHEMA_FIELD_IS_BOOLEAN && is_bool($value = $mixed_value ?? null))
+        else if (($field_type === self::SCHEMA_FIELD_IS_BOOLEAN ||$field_type === self::SCHEMA_FIELD_IS_BOOL) && is_bool($value = $mixed_value ?? null))
             $this->__values[$field] = $value;
-        else if ($is === self::SCHEMA_FIELD_IS_LIST && is_array($value = $mixed_value ?? []))
-            $this->__values[$field] = $value;
-        else if ($is === self::SCHEMA_FIELD_IS_OBJECT && is_object($value = $mixed_value ?? (object) []))
-            $this->__values[$field] = $value;
-        else if ($is === self::SCHEMA_FIELD_IS_SCHEMA && is_object($value = $mixed_value ?? (object) []) && $value instanceOf self)
-            $this->__values[$field] = $value;
-        else if (strpos($is, self::SCHEMA_FIELD_IS_LIST_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_FIELD_IS_LIST_OF, null, $is))) {
-            $this->__values[$field] = [];
-
-            foreach ($mixed_value ?? [] as $temp_data)
-                $this->__values[$field][] = new $class_name($temp_data);
-        } else if (strpos($is, self::SCHEMA_FIELD_IS_OBJECT_OF) !== false && class_exists($class_name = str_replace(self::SCHEMA_FIELD_IS_OBJECT_OF, null, $is))) {
-            if (is_object($value = $mixed_value ?? null) && $value instanceOf $class_name)
-                $this->__values[$field] = $value;
-            else
-                $this->__values[$field] = new $class_name($value);
-        } else if (static::SCHEMA_FIELD_MISMATCH_SET_NULL)
-            $this->__values[$field] = null;
+        else if ($field_type === self::SCHEMA_FIELD_IS_OBJECT && is_object($value = $mixed_value ?? (object) []))
+            $this->__values[$field] = $mixed_value;
+        else if (static::SCHEMA_FIELD_MISMATCH_SET_NULL || !isset($this->__values[$field]))
+            $this->__values[$field] = null; 
     }
-    
+
     /**
     *
     */
@@ -156,24 +135,22 @@ class Schema {
     public function serialize(): array {
         $export_data = [];
 
-        foreach ($this->__schema_fields as $name => $is) {
-            if (!in_array($is, [
-                self::SCHEMA_FIELD_IS_CONTENT,
-                self::SCHEMA_FIELD_IS_STRING,
-                self::SCHEMA_FIELD_IS_NUMERIC,
-                self::SCHEMA_FIELD_IS_INT,
-                self::SCHEMA_FIELD_IS_INTEGER,
-                self::SCHEMA_FIELD_IS_BOOLEAN
-            ])) {
-                if ($this->{$name} instanceOf self)
-                    $export_data[$name] = $this->{$name}->serialize();
-                else if (is_array($this->{$name}) && is_array($is) && is_array(current($is)))
-                    foreach ($this->{$name} as $value)
-                        $export_data[$name][] = $value->serialize();
-                else
-                    $export_data[$name] = (string) $this->{$name};
-            } else
-                $export_data[$name] = $this->{$name};
+        foreach ($this->__values as $field => $value) {
+            if ($value instanceOf self)
+                $export_data[$field] = $value->serialize();
+            else if (is_object($value))
+                $export_data[$field] = (string) $value;
+            else if (is_array($value))
+                $export_data[$field] = array_map(function($temp_value) {
+                    if ($temp_value instanceOf self)
+                        return $temp_value->serialize();
+                    else if (is_object($temp_value))
+                        return (string) $temp_value;
+                    else
+                        return $temp_value;
+                }, $value);
+            else  
+                $export_data[$field] = $value;
         }
 
         return $export_data;

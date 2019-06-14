@@ -7,12 +7,13 @@ declare(strict_types=1);
 session_start();
 
 spl_autoload_register(function(string $classname) {
-	foreach ([
-		FLEXIDIST_PACKAGES_PATH,
-		PACKAGES_PATH
-	] as $namespace)
-		if (is_readable($filename = $namespace . str_replace('\\', '/', $classname) . '.php'))
-			return require_once $filename;
+	$namespace = FLEXIDIST_APPLICATION_PATH . 'packages/';
+	
+	if (preg_match('/^packages/is', $classname))
+		$namespace = APPLICATION_PATH;
+
+	if (is_readable($filename = $namespace . $classname . '.php'))
+		return require_once $filename;
 
 	return false;
 });
@@ -34,20 +35,16 @@ foreach([
 
 	'FLEXIDIST_APPLICATION_PATH' =>
 		__DIR__ . '/application/',
-	'FLEXIDIST_PACKAGES_PATH' =>
-		__DIR__ . '/application/packages/',
 	'APPLICATION_PATH' =>
 		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/',
-	'PACKAGES_PATH' =>
-		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/packages/',
 ] as $name => $value)
 	if (!defined($name))
 		define(strtoupper($name), $value);
 
 foreach ([
 	APPLICATION_PATH,
-	APPLICATION_PATH . 'exts/',
 	APPLICATION_PATH . 'packages/',
+	APPLICATION_PATH . 'packages/public_html/',
 	APPLICATION_PATH . '../public/',
 ] as $dirname) {
 	if (is_dir($dirname))
