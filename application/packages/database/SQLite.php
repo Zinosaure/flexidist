@@ -23,7 +23,7 @@ abstract class SQLite extends \Schema {
     /**
     *
     */
-    final public function __construct($data = [], array $schema_fields = []) {
+    public function __construct($data = [], array $schema_fields = []) {
         parent::__construct($data, $schema_fields);
 
         $this->PDO = \Database\PDO\PDO::SQLite(static::SQLITE_DATABASE_NAME, static::SQLITE_DATABASE_OPTIONS);
