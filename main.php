@@ -12,7 +12,8 @@ spl_autoload_register(function(string $classname) {
 	if (preg_match('/^packages/is', $classname))
 		$namespace = APPLICATION_PATH;
 
-	if (is_readable($filename = $namespace . $classname . '.php'))
+
+	if (file_exists($filename = $namespace . str_replace('\\', '/', $classname) . '.php'))
 		return require_once $filename;
 
 	return false;

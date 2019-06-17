@@ -8,7 +8,7 @@ class Template extends \Schema {
     /**
     *
     */
-    const SCHEMA_FIELD_IS_READONLY = true;
+    const SCHEMA_FIELD_IS_READONLY = false;
     const SCHEMA_FIELD_MISMATCH_SET_NULL = false;
     const SCHEMA_FIELDS = [
         'dirname' => self::SCHEMA_FIELD_IS_DIRECTORY,
@@ -45,7 +45,9 @@ class Template extends \Schema {
         if (is_null($mixed_value))
             return eval('return $this->args["' . implode('"]["', explode('.', $name)) . '"] ?? null;');
         
-        eval('$this->args["' . implode('"]["', explode('.', $name)) . '"] = $mixed_value;');
+        $args = $this->args;
+        eval('$args["' . implode('"]["', explode('.', $name)) . '"] = $mixed_value;');
+        $this->args = $args;
     }
 
     /**
