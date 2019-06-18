@@ -52,15 +52,6 @@ class RouterHttp extends \Schema {
     /**
     *
     */
-    public function attach(string $api, string $prefix = null) {
-        $classname = sprintf('apis\%s\RouterHttp', $api);
-
-        return new $classname($this, $prefix);
-    }
-
-    /**
-    *
-    */
     public function dispatch(?string $http_request = null, ?string $method = null) {
     	$method = strtoupper($method) ?: $this->Request->attributes->REQUEST_METHOD;
         $http_request = $http_request ?: $this->Request->attributes->REQUEST_URI;
