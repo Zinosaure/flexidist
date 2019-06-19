@@ -46,9 +46,9 @@ final class RouterHttp extends \Schema {
     /**
     *
     */
-    public function setCheckpoint(int $checkpoint_level) {
+    public function checkpoint(int $checkpoint_level) {
         if ($this->SecurityControl)
-            return $this->SecurityControl->setCheckpoint($checkpoint_level, $this);
+            return $this->SecurityControl->checkpoint($checkpoint_level, $this);
     }
 
     /**
@@ -79,13 +79,11 @@ final class RouterHttp extends \Schema {
         if (is_null($callback))
             return false;
 
-        $object = $callback->bindTo($this);
-
-        foreach ((new \ReflectionFunction($object))->getParameters() as $param)
+        foreach ((new \ReflectionFunction($callback))->getParameters() as $param)
             if (($param_type = $param->getType()) && !in_array($class_name = $param_type->getName(), ['int', 'string']))
                 $callback_args[$param->getName()] = new $class_name($callback_args[$param->getName()]);
  
-        return call_user_func_array($object, $callback_args);
+        return $callback->call($this, ...array_values($callback_args));
     }
 
     /**

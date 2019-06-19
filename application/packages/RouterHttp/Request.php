@@ -71,8 +71,8 @@ class Request extends \Schema {
     /**
     *
     */
-    public static function redirectTo(string $url, int $status_code = 301) {
-        exit(header('Location: ' . $url, false, $status_code));
+    public static function redirect(string $redirect_url, int $status_code = 301) {
+        exit(header('Location: ' . $redirect_url, false, $status_code));
     }
 }
 ?>

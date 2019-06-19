@@ -25,10 +25,10 @@ class SecurityControl extends \Schema {
     /**
     *
     */
-    public function __construct(int $level, \Schema $userdata, \Closure $callback = null) {
+    public function __construct(int $level = 0, \Schema $userdata = null, \Closure $callback = null) {
         parent::__construct([
             'level' => $level,
-            'userdata' => (object) $userdata,
+            'userdata' => $userdata,
             'callback' => $callback ?: function() { http_response_code(401); }
         ]);
     }
@@ -36,7 +36,7 @@ class SecurityControl extends \Schema {
     /**
     *
     */
-    public function setCheckpoint(int $checkpoint_level, \RouterHttp $RouterHttp) {
+    public function checkpoint(int $checkpoint_level, \RouterHttp &$RouterHttp) {
         if ($this->level > $checkpoint_level)
             return $this->isRestricted($RouterHttp);
     }
@@ -44,8 +44,8 @@ class SecurityControl extends \Schema {
     /**
     *
     */
-    public function isRestricted(\RouterHttp $RouterHttp = null) {
-        exit(call_user_func_array($this->callback->bindTo($RouterHttp ?: $this), []));
+    public function isRestricted(\RouterHttp &$RouterHttp) {
+        exit($this->callback->call($RouterHttp));
     }
 }
 ?>
