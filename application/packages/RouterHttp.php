@@ -77,7 +77,7 @@ final class RouterHttp extends \Schema {
         $callback_args = $callback_args ?: $this->callback_args;
 
         if (is_null($callback))
-            return false;
+            $callback = function() { http_response_code(404); };
 
         foreach ((new \ReflectionFunction($callback))->getParameters() as $param)
             if (($param_type = $param->getType()) && !in_array($class_name = $param_type->getName(), ['int', 'string']))
