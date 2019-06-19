@@ -148,13 +148,13 @@ class Schema {
         foreach ($this->__values as $field => $value) {
             if ($value instanceOf self)
                 $export_data[$field] = $value->serialize();
-            else if (is_object($value))
+            else if (is_object($value) && is_callable([$value, '__toString']))
                 $export_data[$field] = (string) $value;
             else if (is_array($value))
                 $export_data[$field] = array_map(function($temp_value) {
                     if ($temp_value instanceOf self)
                         return $temp_value->serialize();
-                    else if (is_object($temp_value))
+                    else if (is_object($temp_value) && is_callable([$value, '__toString']))
                         return (string) $temp_value;
                     else
                         return $temp_value;

@@ -3,7 +3,7 @@
 /**
 *
 */
-class RouterHttp extends \Schema {
+final class RouterHttp extends \Schema {
 	
 	/**
     *
@@ -12,8 +12,11 @@ class RouterHttp extends \Schema {
     const SCHEMA_FIELDS = [
         'Request' => self::SCHEMA_FIELD_IS_OBJECT,
         'Response' => self::SCHEMA_FIELD_IS_OBJECT,
+        'SecurityControl' => self::SCHEMA_FIELD_IS_OBJECT,
     ];
     
+    protected $callback = null;
+    protected $callback_args = [];
     protected $methods = [
         '*'         => [],
         'GET'       => [],
@@ -30,13 +33,30 @@ class RouterHttp extends \Schema {
     /**
     *
     */
-    public function __construct() {
+    public function __construct(\RouterHttp\SecurityControl $SecurityControl = null) {
         ($session_started = session_status() != PHP_SESSION_NONE) ? null : session_start();
 
         parent::__construct([
             'Request' => new \RouterHttp\Request(),
             'Response' => new \RouterHttp\Response(),
+            'SecurityControl' => $SecurityControl,
         ]);
+    }
+
+    /**
+    *
+    */
+    public function setCheckpoint(int $checkpoint_level) {
+        if ($this->SecurityControl)
+            return $this->SecurityControl->setCheckpoint($checkpoint_level, $this);
+    }
+
+    /**
+    *
+    */
+    public function isRestricted() {
+        if ($this->SecurityControl)
+            return $this->SecurityControl->isRestricted($this);
     }
     
     /**
@@ -48,30 +68,46 @@ class RouterHttp extends \Schema {
  
         return $this;
     }
-    
+
     /**
     *
     */
-    public function dispatch(?string $http_request = null, ?string $method = null) {
+    public function execute(\Closure $callback = null, array $callback_args = []) {
+        $callback = $callback ?: $this->callback;
+        $callback_args = $callback_args ?: $this->callback_args;
+
+        if (is_null($callback))
+            return false;
+
+        $object = $callback->bindTo($this);
+
+        foreach ((new \ReflectionFunction($object))->getParameters() as $param)
+            if (($param_type = $param->getType()) && !in_array($class_name = $param_type->getName(), ['int', 'string']))
+                $callback_args[$param->getName()] = new $class_name($callback_args[$param->getName()]);
+ 
+        return call_user_func_array($object, $callback_args);
+    }
+
+    /**
+    *
+    */
+    public function dispatch(?string $http_request = null, ?string $method = null): bool {
     	$method = strtoupper($method) ?: $this->Request->attributes->REQUEST_METHOD;
         $http_request = $http_request ?: $this->Request->attributes->REQUEST_URI;
         $http_requests = explode('/', $http_request);
         
     	foreach(array_replace($this->methods['*'], $this->methods[$method]) as $pattern => $callback) {
-            $args = [];
+            $callback_args = [];
             $is_matched = true;
             $is_no_limit = false;
  
             if ($http_request == $pattern
                 || (preg_match('/^\/.+\/[a-z]*$/i', $pattern)
-                        && preg_match($pattern, $http_request, $args))) {
-				$callback = \Closure::bind($callback, $this, get_class());
+                        && preg_match($pattern, $http_request, $callback_args))) {
+                $this->callback = $callback;
+                $this->callback_args = $callback_args;
 
-		        foreach ((new \ReflectionFunction($callback))->getParameters() as $param)
-		            if (($param_type = $param->getType()) && !in_array($class_name = $param_type->getName(), ['int', 'string']))
-		                $args[$param->getName()] = new $class_name($args[$param->getName()]);
-		 
-		        return call_user_func_array($callback, $args);
+                return true;
 			}
  
             foreach(array_map(
@@ -97,7 +133,7 @@ class RouterHttp extends \Schema {
                             break;
                         else if (!$options['var_type'] && !($is_matched = $options['value'] == $value))
                             break;
-                    } else if (!$options['is_required'] && is_null($args[$options['var_name']] = $value))
+                    } else if (!$options['is_required'] && is_null($callback_args[$options['var_name']] = $value))
                         continue;
  
                     if ($is_no_limit = (strtolower($options['var_type']) == '*'))
@@ -108,17 +144,14 @@ class RouterHttp extends \Schema {
                         break;
  
                     if ($options['var_type'])
-                        $args[$options['var_name']] = $value;
+                        $callback_args[$options['var_name']] = $value;
             }
  
             if ($is_matched && !(!$is_no_limit && substr_count($http_request, '/') > substr_count($pattern, '/'))) {
-            	$callback = \Closure::bind($callback, $this, get_class());
+            	$this->callback = $callback;
+                $this->callback_args = $callback_args;
 
-		        foreach ((new \ReflectionFunction($callback))->getParameters() as $param)
-		            if (($param_type = $param->getType()) && !in_array($class_name = $param_type->getName(), ['int', 'string']))
-		                $args[$param->getName()] = new $class_name($args[$param->getName()]);
-		 
-		        return call_user_func_array($callback, $args);
+                return true;
             }
         }
 
