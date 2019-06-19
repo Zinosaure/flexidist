@@ -25,7 +25,7 @@ class SecurityControl extends \Schema {
     /**
     *
     */
-    public function __construct(int $level = 0, \Schema $userdata = null, \Closure $callback = null) {
+    public function __construct(int $level, \Schema $userdata, \Closure $callback = null) {
         parent::__construct([
             'level' => $level,
             'userdata' => $userdata,
