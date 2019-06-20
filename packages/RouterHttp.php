@@ -47,8 +47,10 @@ final class RouterHttp extends \Schema {
     *
     */
     public function checkpoint(int $checkpoint_level) {
-        if ($this->SecurityControl)
+        if (!is_null($this->SecurityControl))
             return $this->SecurityControl->checkpoint($checkpoint_level, $this);
+
+        throw new \Exception("'RouterHttp::checkpoint': attribute SecurityControl is null.");
     }
 
     /**

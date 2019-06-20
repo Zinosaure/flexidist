@@ -3,7 +3,7 @@
 /**
 *
 */
-class Template extends \Schema {
+class ContentTemplate extends \Schema {
 
     /**
     *
@@ -63,18 +63,18 @@ class Template extends \Schema {
 
                 return $file_contents;
             },
-            '/{%\s+extends\s*"(.+)"\s+%}/isU' => function(string $file_contents, array $matches) use ($source_filename, $extends_limit): string {
+            '/{%\s+extends\s*\((.+)\)\s+%}/isU' => function(string $file_contents, array $matches) use ($source_filename, $extends_limit): string {
                 $ENVIRONMENT_PATH = $this->dirname;
 
                 foreach ($matches as $i => $match) {
                     if ($match[1] == $source_filename)
-                        $file_contents = str_replace($match[0], sprintf('<!-- extends "%s": Attempt to extend the same file_contents, aborting! -->', $match[1]),  $file_contents);
+                        $file_contents = str_replace($match[0], sprintf('<!-- extends(%s): Attempt to extend the same file_contents, aborting! -->', $match[1]),  $file_contents);
                     else if ($extends_limit <= 0)
-                        $file_contents = str_replace($match[0], sprintf('<!-- extends "%s": The maximum limit to extend the file_contents reached, aborting! -->', $match[1]),  $file_contents);
-                    else if (($content = @file_get_contents($match[1])) !== false)
+                        $file_contents = str_replace($match[0], sprintf('<!-- extends(%s): The maximum limit to extend the file_contents reached, aborting! -->', $match[1]),  $file_contents);
+                    else if (($content = @file_get_contents(eval(sprintf('return %s;', $match[1])))) !== false)
                         $file_contents = str_replace($match[0], $this->init($content, $match[1], -- $extends_limit),  $file_contents);
                     else
-                        $file_contents = str_replace($match[0], sprintf('<!-- extends "%s": Failed to open stream, no such file found. -->', $match[1]), $file_contents);
+                        $file_contents = str_replace($match[0], sprintf('<!-- extends(%s): Failed to open stream, no such file found. -->', $match[1]), $file_contents);
                 }
 
                 return $file_contents;
@@ -99,7 +99,6 @@ class Template extends \Schema {
             $keywords = [
                 '&&', '||', ',', ';', '(', ')', '!', '?', ':', '===', '==', '=',
                 '!==', '!=', '>=', '<=', '<>', '>', '<','%', '*', '^', '/', '+', '-',
-                'return', 'break', 'continue',
             ];
             $pattern = '/\s*(' . str_replace('`', '|', preg_quote(implode('`', $keywords), '/')) . ')\s*/is';
         
@@ -121,9 +120,9 @@ class Template extends \Schema {
                 if (!isset($variables[$i])) {
                     if (($list = explode('.', $match)) && count($list) > 1) {
                         $variable = array_shift($list);
-                        $variables[$i] = sprintf('$%s["%s"]', $variable, implode('"]["', $list));
+                        $variables[$i] = sprintf('@$%s->%s', $variable, implode('->', $list));
                     } else
-                        $variables[$i] = sprintf('$%s', $match);
+                        $variables[$i] = sprintf('@$%s', $match);
                 }
             }
         
@@ -131,6 +130,12 @@ class Template extends \Schema {
         };
 
         $patterns = [
+            '/\{%\s+(continue|break|)\s+%\}/isU' => function(string $file_contents, array $matches) use ($interpolation): string {
+                foreach ($matches as $i => $match)
+                    $file_contents = str_replace($match[0], sprintf('<?php %s ?>', $match[1]), $file_contents);
+            
+                return $file_contents;
+            },
             '/\{%\s+(end|endfor|endif|close)\s+%\}/isU' => function(string $file_contents, array $matches) use ($interpolation): string {
                 foreach ($matches as $i => $match)
                     $file_contents = str_replace($match[0], '<?php } ?>', $file_contents);

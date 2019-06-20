@@ -7,11 +7,10 @@ declare(strict_types=1);
 session_start();
 
 spl_autoload_register(function(string $classname) {
-	$namespace = FLEXIDIST_APPLICATION_PATH . 'packages/';
+	$namespace = SRC_PACKAGES_PATH;
 	
 	if (preg_match('/^packages/is', $classname))
 		$namespace = APPLICATION_PATH;
-
 
 	if (file_exists($filename = $namespace . str_replace('\\', '/', $classname) . '.php'))
 		return require_once $filename;
@@ -34,8 +33,8 @@ foreach([
 	'REQUEST_QUERY_URI' =>
 		substr(str_replace($DOCUMENT_ROOT, ($DOCUMENT_ROOT != '/') ? null : '/', $_SERVER['REQUEST_URI']), 1),
 
-	'FLEXIDIST_APPLICATION_PATH' =>
-		__DIR__ . '/application/',
+	'SRC_PACKAGES_PATH' =>
+		__DIR__ . '/packages/',
 	'APPLICATION_PATH' =>
 		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/',
 ] as $name => $value)
