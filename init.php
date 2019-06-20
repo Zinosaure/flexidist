@@ -9,7 +9,7 @@ session_start();
 spl_autoload_register(function(string $classname) {
 	$namespace = SRC_PACKAGES_PATH;
 	
-	if (preg_match('/^packages/is', $classname))
+	if (preg_match('/^(packages|views)/is', $classname))
 		$namespace = APPLICATION_PATH;
 
 	if (file_exists($filename = $namespace . str_replace('\\', '/', $classname) . '.php'))
@@ -37,6 +37,8 @@ foreach([
 		__DIR__ . '/packages/',
 	'APPLICATION_PATH' =>
 		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/',
+	'VIEW_TEMPLATES_PATH' => 
+		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/views/templates/',
 ] as $name => $value)
 	if (!defined($name))
 		define(strtoupper($name), $value);
@@ -44,11 +46,12 @@ foreach([
 foreach ([
 	APPLICATION_PATH,
 	APPLICATION_PATH . 'packages/',
-	APPLICATION_PATH . 'packages/public_html/',
+	APPLICATION_PATH . 'views/',
+	APPLICATION_PATH . 'views/templates/',
 	APPLICATION_PATH . '../public/',
 ] as $dirname) {
 	if (is_dir($dirname))
-		break;
+		continue;
 	
 	@mkdir($dirname, 0777, true);
 	@chmod($dirname, 0777);
