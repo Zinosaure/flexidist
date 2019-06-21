@@ -28,8 +28,8 @@ class Schema {
 
     const SCHEMA_FIELDS = [];
 
-    protected $__values = [];
-    protected $__schema_fields = self::SCHEMA_FIELDS;
+    private $__values = [];
+    private $__schema_fields = self::SCHEMA_FIELDS;
 
     /**
     *
@@ -69,6 +69,11 @@ class Schema {
         
         return false;
     }
+
+    /**
+    *
+    */
+    final public function __unset(string $field) {}
     
     /**
     *
@@ -83,7 +88,7 @@ class Schema {
     /**
     *
     */
-    public function __set(string $field, $mixed_value) {
+    final public function __set(string $field, $mixed_value) {
         if ((static::SCHEMA_FIELD_IS_READONLY && isset($this->__values[$field]))|| !$field_type = $this->__schema_fields[$field] ?? null)
             return;
             
@@ -136,34 +141,52 @@ class Schema {
     *
     */
     public function __toString() {
-        return json_encode($this->serialize(), JSON_NUMERIC_CHECK);
+        return json_encode($this->__exportValues(), JSON_NUMERIC_CHECK);
     }
 
     /**
     *
     */
-    public function serialize(): array {
-        $export_data = [];
+    final public function __importPropertiesOf(\Schema $Schema, bool $merge_all = false) {
+        foreach ($Schema->__exportProperties() as $field => $value)
+            $this->{$field} = $merge_all ? array_replace_recursive($this->{$field}, $value) : $value;
+    }
+
+    /**
+    *
+    */
+    final public function __exportProperties(): array {
+        return [
+            '__values' => $this->__values,
+            '__schema_fields' => $this->__schema_fields,
+        ];
+    }
+
+    /**
+    *
+    */
+    final public function __exportValues(): array {
+        $export_values = [];
 
         foreach ($this->__values as $field => $value) {
             if ($value instanceOf self)
-                $export_data[$field] = $value->serialize();
+                $export_values[$field] = $value->__exportValues();
             else if (is_object($value) && is_callable([$value, '__toString']))
-                $export_data[$field] = (string) $value;
+                $export_values[$field] = (string) $value;
             else if (is_array($value))
-                $export_data[$field] = array_map(function($temp_value) {
+                $export_values[$field] = array_map(function($temp_value) {
                     if ($temp_value instanceOf self)
-                        return $temp_value->serialize();
+                        return $temp_value->__exportValues();
                     else if (is_object($temp_value) && is_callable([$value, '__toString']))
                         return (string) $temp_value;
                     else
                         return $temp_value;
                 }, $value);
             else  
-                $export_data[$field] = $value;
+                $export_values[$field] = $value;
         }
 
-        return $export_data;
+        return $export_values;
     }
 }
 ?>

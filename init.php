@@ -37,8 +37,6 @@ foreach([
 		__DIR__ . '/packages/',
 	'APPLICATION_PATH' =>
 		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/',
-	'VIEW_TEMPLATES_PATH' => 
-		dirname($_SERVER['SCRIPT_FILENAME']) . '/application/views/templates/',
 ] as $name => $value)
 	if (!defined($name))
 		define(strtoupper($name), $value);
