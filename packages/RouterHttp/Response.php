@@ -111,8 +111,8 @@ final class Response extends \Schema {
     /**
     *
     */
-    public function setFlexContent(string $template, \Schema $Schema): \Schema {
-        return $this->Content = $this->createFlexContent($template, $Schema);
+    public function setFlexContent(string $template, \Schema $Schema) {
+        $this->Content = $this->createFlexContent($template, $Schema);
     }
 
     /**
