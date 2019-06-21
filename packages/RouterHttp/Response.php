@@ -8,7 +8,7 @@ namespace RouterHttp;
 /**
 *
 */
-class Response extends \Schema {
+final class Response extends \Schema {
 
     /**
     *
@@ -111,13 +111,20 @@ class Response extends \Schema {
     /**
     *
     */
-    public function setContentEngine(string $template, \Schema $Schema): \Schema {
-        return $this->Content = new class($Schema, $template) extends \Schema {
+    public function setFlexContent(string $template, \Schema $Schema): \Schema {
+        return $this->Content = $this->createFlexContent($template, $Schema);
+    }
+
+    /**
+    *
+    */
+    public function createFlexContent(string $template, \Schema $Schema): \Schema {
+        return new class($template, $Schema) extends \Schema {
             private $__template = null;
 
-            public function __construct($Schema, $template) {
-                $this->__importPropertiesOf($Schema);
+            public function __construct($template, $Schema) {
                 $this->__template = $template;
+                $this->__importPropertiesOf($Schema);
             }
 
             public function __toString(): string {

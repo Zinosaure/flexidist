@@ -8,7 +8,7 @@ namespace RouterHttp;
 /**
 *
 */
-class Request extends \Schema {
+final class Request extends \Schema {
 
     /**
     *

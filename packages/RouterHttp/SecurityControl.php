@@ -8,7 +8,7 @@ namespace RouterHttp;
 /**
 *
 */
-class SecurityControl extends \Schema {
+final class SecurityControl extends \Schema {
 
     /**
     *
