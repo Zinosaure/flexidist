@@ -157,4 +157,11 @@ final class RouterHttp extends \Schema {
 
         return false;
     }
+
+    /**
+    *
+    */
+    public function listen(?string $http_request = null, ?string $method = null) {
+        return $this->dispatch($http_request, $method) && $this->execute();
+    }
 }
