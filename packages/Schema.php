@@ -122,7 +122,7 @@ class Schema {
             $this->__values[$field] = $value;
         else if ($field_type === self::SCHEMA_FIELD_IS_CONTENT
                 && (is_string($value = $mixed_value ?? null) || is_numeric($value) || is_callable([$value, '__toString'])))
-            $this->__values[$field] = file_exists($value) && is_file($value) ? file_get_contents($value) : $value;
+            $this->__values[$field] = $value;
         else if ($field_type === self::SCHEMA_FIELD_IS_STRING && is_string($value = $mixed_value ?? null))
             $this->__values[$field] = $value;
         else if ($field_type === self::SCHEMA_FIELD_IS_NUMERIC && is_numeric($value = $mixed_value ?? null))
