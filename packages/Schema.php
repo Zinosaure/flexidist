@@ -34,7 +34,7 @@ class Schema {
     /**
     *
     */
-    public function __construct($data = [], array $schema_fields = []) {
+    public function __construct($data = [], $schema_fields = []) {
         if (is_string($data) && ($json_decode = json_decode($data, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
             $data = $json_decode;
 
@@ -43,6 +43,15 @@ class Schema {
 
         if (!is_array($data))
             $data = [];
+
+        if (is_string($schema_fields) && ($json_decode = json_decode($schema_fields, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
+            $schema_fields = $json_decode;
+
+        if ($schema_fields instanceOf self)
+            $schema_fields = $data->__schema_fields;
+
+        if (!is_array($schema_fields))
+            $schema_fields = static::SCHEMA_FIELD;
 
         foreach ($schema_fields ?: static::SCHEMA_FIELDS as $field => $field_type) {
             if ((preg_match('/\[\]$/', $field) && $field = preg_replace('/(\[\])$/', null, $field))) {
@@ -55,7 +64,6 @@ class Schema {
             else
                 $this->__schema_fields[$field] = $field_type;
 
-
             $this->{$field} = $data[$field] ?? null;
         }
     }
@@ -64,7 +72,7 @@ class Schema {
     *
     */
     final public function __isset(string $field): bool {
-        if (isset($this->__values[$field]))
+        if (array_key_exists($field, $this->__values))
             return true;
         
         return false;
@@ -79,10 +87,19 @@ class Schema {
     *
     */
     final public function &__get(string $field) {
-        if (is_array($list = $this->__values[$field]))
-            return $list;
-        
-        return $this->__values[$field];
+        $null = null;
+
+        if (array_key_exists($field, $this->__values)) {
+            if (is_array($list = $this->__values[$field]))
+                return $list;
+                
+            return $this->__values[$field];
+        }
+
+        $trace = debug_backtrace();
+        trigger_error(sprintf('Undefined property via __get(): %s in %s on line %s', $field, $trace[0]['file'], $trace[0]['line']), E_USER_NOTICE);
+
+        return $null;
     }
 
     /**
@@ -91,26 +108,29 @@ class Schema {
     final public function __set(string $field, $mixed_value) {
         if ((static::SCHEMA_FIELD_IS_READONLY && isset($this->__values[$field]))|| !$field_type = $this->__schema_fields[$field] ?? null)
             return;
-            
+        
         if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_LIST_OF . self::SCHEMA_FIELD_IS_SCHEMA) !== false 
-                && ($schema_fields = str_replace($search, null, $field_type)) && is_array($mixed_value = $mixed_value ?? [])) {
+                && ($schema_fields = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type))) {
+            if (!is_array($mixed_value = $mixed_value ?? []))
+                $mixed_value = is_array($mixed_value = json_decode($mixed_value, JSON_OBJECT_AS_ARRAY)) ? $mixed_value : [];
+
             $this->__values[$field] = array_map(function($value) use ($schema_fields) {
-                return new self($value, json_decode($schema_fields, JSON_OBJECT_AS_ARRAY));
+                return new self($value, $schema_fields);
             }, $mixed_value ?? []);
         } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_SCHEMA) !== false 
-                && ($schema_fields = str_replace($search, null, $field_type)) && is_array($mixed_value = $mixed_value ?? [])) {
-            $this->__values[$field] = new self($mixed_value, json_decode($schema_fields, JSON_OBJECT_AS_ARRAY));
+                && ($schema_fields = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type))) {
+            $this->__values[$field] = new self($mixed_value, $schema_fields);
         } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_LIST_OF . self::SCHEMA_FIELD_IS_INSTANCE_OF) !== false 
-                && ($classname = str_replace($search, null, $field_type)) && is_array($mixed_value)) {
+                && ($classname = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type)) && is_array($mixed_value)) {
             $this->__values[$field] = array_map(function($value) use ($classname) {
                 return class_exists($classname) && ($value instanceOf $classname || (is_array($value = $value ?? []) && ($value = new $classname($value)))) ? $value : null;
             }, $mixed_value ?? []);
         } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_INSTANCE_OF) !== false 
-                && $classname = str_replace($search, null, $field_type)) {
+                && $classname = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type)) {
             if ($mixed_value instanceOf $classname || (is_array($mixed_value = $mixed_value ?? []) && ($mixed_value = new $classname($mixed_value))))
                 $this->__values[$field] = $mixed_value;
         } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_LIST_OF) !== false 
-                && ($typeof = str_replace($search, null, $field_type)) && is_array($mixed_value = $mixed_value ?? [])) {
+                && ($typeof = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type)) && is_array($mixed_value = $mixed_value ?? [])) {
             $this->__values[$field] = array_map(function($value) use ($typeof) {
                 return is_callable($typeof) && $typeof($value) ? $value : null;
             }, $mixed_value ?? []);

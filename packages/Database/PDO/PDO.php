@@ -61,7 +61,7 @@ final class PDO extends \PDO {
 		if (!file_exists($database))
 			@mkdir(dirname($database), 0777, true);
 
-		if (self::$PDOs[$dsn] = new self($dsn, (string) null, (string) null, $options))
+		if (self::$PDOs[$dsn] = new self($dsn, '', '', $options))
 			@chmod($database, 0777);
 
 		return self::$PDOs[$dsn];
