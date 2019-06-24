@@ -111,37 +111,6 @@ final class Response extends \Schema {
     /**
     *
     */
-    public function setFlexContent(string $template, \Schema $Schema) {
-        $this->Content = $this->createFlexContent($template, $Schema);
-    }
-
-    /**
-    *
-    */
-    public function createFlexContent(string $template, \Schema $Schema): \Schema {
-        return new class($template, $Schema) extends \Schema {
-            private $__template = null;
-
-            public function __construct($template, $Schema) {
-                $this->__template = $template;
-                $this->__importPropertiesOf($Schema);
-            }
-
-            public function __toString(): string {
-                ob_start();                    
-                    if (preg_match('/\.phtml$/is', $filename = sprintf('%sviews/%s', APPLICATION_PATH, $content = $this->__template)) && is_file($filename))
-                        $content = file_get_contents($filename);
-
-                    echo eval('?>' . $content);
-                
-                return ob_get_clean();
-            }
-        };
-    }
-
-    /**
-    *
-    */
     public function send(int $status_code = null) {
         $status_code = $status_code ?? $this->status_code;
 

@@ -45,7 +45,6 @@ foreach ([
 	APPLICATION_PATH,
 	APPLICATION_PATH . 'packages/',
 	APPLICATION_PATH . 'views/',
-	APPLICATION_PATH . 'views/templates/',
 	APPLICATION_PATH . '../public/',
 ] as $dirname) {
 	if (is_dir($dirname))
