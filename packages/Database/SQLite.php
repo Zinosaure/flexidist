@@ -58,7 +58,7 @@ abstract class SQLite extends \Schema {
     /**
     *
     */
-    final public function count(): int {
+    final public static function count(): int {
 		$query_string = sprintf('SELECT COUNT(*) AS T FROM %s;', static::SQLITE_TABLE_NAME);
 
 		if (($sth = static::PDO()->execute($query_string)) && $data = $sth->fetch(\PDO::FETCH_ASSOC))

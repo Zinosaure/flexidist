@@ -15,37 +15,49 @@ final class SecurityControl extends \Schema {
     */
     const SCHEMA_FIELD_IS_READONLY = true;
     const SCHEMA_FIELDS = [
-        'level' => self::SCHEMA_FIELD_IS_INT,
-        'userdata'=> self::SCHEMA_FIELD_IS_OBJECT,
-        'callback' => self::SCHEMA_FIELD_IS_INSTANCE_OF . '\Closure',
+        'is_connected' => self::SCHEMA_FIELD_IS_BOOL,
+        'user_permission' => self::SCHEMA_FIELD_IS_INT,
+        'data'=> self::SCHEMA_FIELD_IS_OBJECT,
+        'on_unauthorized' => self::SCHEMA_FIELD_IS_INSTANCE_OF . '\Closure',
+        'on_forbidden' => self::SCHEMA_FIELD_IS_INSTANCE_OF . '\Closure',
     ];
-
-    protected $callback = null;
 
     /**
     *
     */
-    public function __construct(?int $level, \Schema $userdata, \Closure $callback = null) {
+    public function __construct(?int $user_permission, $data = null, \Closure $on_unauthorized = null, \Closure $on_forbidden = null) {
         parent::__construct([
-            'level' => $level,
-            'userdata' => $userdata,
-            'callback' => $callback ?: function() { http_response_code(401); }
+            'is_connected' => !is_null($data),
+            'user_permission' => $user_permission,
+            'data' => (object) $data,
+            'on_unauthorized' => $on_unauthorized ?: function() { http_response_code(401); },
+            'on_forbidden' => $on_forbidden ?: function() { http_response_code(403); },
         ]);
     }
 
     /**
     *
     */
-    public function checkpoint(int $checkpoint_level, \RouterHttp &$RouterHttp) {
-        if ($this->level > $checkpoint_level)
-            return $this->isRestricted($RouterHttp);
+    public function checkPermission(int $permission_id, \RouterHttp &$RouterHttp) {
+        if (!$this->is_connected)
+            return $this->isUnauthorized($RouterHttp);
+
+        if (!$this->user_permission || $this->user_permission > $permission_id)
+            return $this->isForbidden($RouterHttp);
     }
 
     /**
     *
     */
-    public function isRestricted(\RouterHttp &$RouterHttp) {
-        exit($this->callback->call($RouterHttp));
+    public function isUnauthorized(\RouterHttp &$RouterHttp) {
+        exit($this->on_unauthorized->call($RouterHttp));
+    }
+
+    /**
+    *
+    */
+    public function isForbidden(\RouterHttp &$RouterHttp) {
+        exit($this->on_forbidden->call($RouterHttp));
     }
 }
 ?>

@@ -60,19 +60,27 @@ final class RouterHttp extends \Schema {
     /**
     *
     */
-    public function checkpoint(int $checkpoint_level) {
+    public function checkPermission(int $permission_id) {
         if (!is_null($this->SecurityControl))
-            return $this->SecurityControl->checkpoint($checkpoint_level, $this);
+            return $this->SecurityControl->checkPermission($permission_id, $this);
 
-        throw new \Exception("'RouterHttp::checkpoint': attribute SecurityControl is null.");
+        throw new \Error("'RouterHttp::checkPermission()': attribute SecurityControl is null.");
     }
 
     /**
     *
     */
-    public function isRestricted() {
+    public function isUnauthorized() {
         if ($this->SecurityControl)
-            return $this->SecurityControl->isRestricted($this);
+            return $this->SecurityControl->isUnauthorized($this);
+    }
+
+    /**
+    *
+    */
+    public function isForbidden() {
+        if ($this->SecurityControl)
+            return $this->SecurityControl->isForbidden($this);
     }
     
     /**
