@@ -97,7 +97,7 @@ class Schema {
         }
 
         $trace = debug_backtrace();
-        trigger_error(sprintf('Undefined property via __get(): %s in %s on line %s', $field, $trace[0]['file'], $trace[0]['line']), E_USER_NOTICE);
+        trigger_error(sprintf('Undefined property via __get(): %s in %s from class %s', $field, $trace[0]['file'], get_called_class()), E_USER_NOTICE);
 
         return $null;
     }
