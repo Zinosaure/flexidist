@@ -18,6 +18,11 @@ abstract class SQLite extends \Schema {
     const SQLITE_TABLE_NAME = null;
     const SQLITE_PRIMARY_KEY = null;
 
+    const SQLITE_NOT_NULL_FIELDS = [];
+    const SQLITE_CHECK_FIELDS = [];
+    const SQLITE_DEFAULT_FIELDS = [];
+    const SQLITE_UNIQUE_FIELDS = [];
+
     /**
     *
     */

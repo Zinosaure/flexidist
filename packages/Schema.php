@@ -8,61 +8,55 @@ class Schema {
     /**
     *
     */
-    const SCHEMA_FIELD_IS_READONLY = false;
-    const SCHEMA_FIELD_MISMATCH_SET_NULL = true;
+    const FIELD_SET_READONLY = false;
+    const FIELD_SET_NULL_ON_TYPE_MISMATCH = true;
 
-    const SCHEMA_FIELD_IS_FILE = 'is_file';
-    const SCHEMA_FIELD_IS_DIRECTORY = 'is_dir';
-    const SCHEMA_FIELD_IS_CONTENT = 'is_content';
-    const SCHEMA_FIELD_IS_STRING = 'is_string';
-    const SCHEMA_FIELD_IS_NUMERIC = 'is_numeric';
-    const SCHEMA_FIELD_IS_INT = 'is_int';
-    const SCHEMA_FIELD_IS_INTEGER = 'is_int';
-    const SCHEMA_FIELD_IS_BOOL = 'is_bool';
-    const SCHEMA_FIELD_IS_BOOLEAN = 'is_bool';
-    const SCHEMA_FIELD_IS_OBJECT = 'is_object';
-    const SCHEMA_FIELD_IS_LIST = 'is_array';
-    const SCHEMA_FIELD_IS_LIST_OF = 'is_array_of:';
-    const SCHEMA_FIELD_IS_INSTANCE_OF = 'is_instance_of:';
-    const SCHEMA_FIELD_IS_SCHEMA = 'is_schema:';
+    const FIELD_IS_STRING = 'is_string';
+    const FIELD_IS_NUMERIC = 'is_numeric';
+    const FIELD_IS_INT = 'is_int';
+    const FIELD_IS_INTEGER = 'is_int';
+    const FIELD_IS_FLOAT = 'is_float';
+    const FIELD_IS_DOUBLE = 'is_double';
+    const FIELD_IS_BOOL = 'is_bool';
+    const FIELD_IS_BOOLEAN = 'is_bool';
+    const FIELD_IS_CONTENT = 'is_content';
+    const FIELD_IS_ARRAY = 'is_array';
+    const FIELD_IS_LIST = 'is_array';
+    const FIELD_IS_OBJECT = 'is_object';
+    const FIELD_IS_INSTANCE_OF = 'is_instance_of:';
+    const FIELD_IS_LIST_OF = 'is_array_of:';
+    const FIELD_IS_SCHEMA = 'is_schema:';
 
+    const COLUMN_IS_AUTOINCREMENT = '|AUTOINCREMENT';
+    const COLUMN_IS_PRIMARY_KEY = '|PRIMARY KEY';
+    const COLUMN_IS_REQUIRED = '|NOT NULL';
+    const COLUMN_IS_UNIQUE = '|UNIQUE';
+    const COLUMN_HAVE_DEFAULT = '|DEFAULT ';
+    const COLUMN_HAVE_CHECKED = '|CHECK ';
+
+    const TABLE_NAME = null;
     const SCHEMA_FIELDS = [];
 
     private $__values = [];
-    private $__schema_fields = self::SCHEMA_FIELDS;
+    private $__field_constraints = [];
 
     /**
     *
     */
     public function __construct($data = [], $schema_fields = []) {
-        if (is_string($data) && ($json_decode = json_decode($data, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
-            $data = $json_decode;
-
-        if ($data instanceOf self)
-            $data = $data->__values;
-
-        if (!is_array($data))
-            $data = [];
-
-        if (is_string($schema_fields) && ($json_decode = json_decode($schema_fields, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
-            $schema_fields = $json_decode;
-
-        if ($schema_fields instanceOf self)
-            $schema_fields = $data->__schema_fields;
-
-        if (!is_array($schema_fields))
-            $schema_fields = static::SCHEMA_FIELD;
-
-        foreach ($schema_fields ?: static::SCHEMA_FIELDS as $field => $field_type) {
-            if ((preg_match('/\[\]$/', $field) && $field = preg_replace('/(\[\])$/', null, $field))) {
+        $data = $this->__toarray($data);
+        $schema_fields = $this->__toarray($schema_fields);
+        
+        foreach($schema_fields ?: static::SCHEMA_FIELDS as $field => $field_type) {
+            if (preg_match('/\[\]$/', $field) && $field = preg_replace('/(\[\])$/', null, $field)) {
                 if (is_array($field_type))
-                    $this->__schema_fields[$field] = self::SCHEMA_FIELD_IS_LIST_OF . self::SCHEMA_FIELD_IS_SCHEMA . json_encode($field_type);
+                    $this->__field_constraints[$field] = self::FIELD_IS_LIST_OF . self::FIELD_IS_SCHEMA . json_encode($field_type);
                 else
-                    $this->__schema_fields[$field] = self::SCHEMA_FIELD_IS_LIST_OF . $field_type;
-            } else if (is_array($field_type))
-                $this->__schema_fields[$field] = self::SCHEMA_FIELD_IS_SCHEMA . json_encode($field_type);
+                    $this->__field_constraints[$field] = self::FIELD_IS_LIST_OF . $field_type;
+            }  else if (is_array($field_type))
+                $this->__field_constraints[$field] = self::FIELD_IS_SCHEMA . json_encode($field_type);
             else
-                $this->__schema_fields[$field] = $field_type;
+                $this->__field_constraints[$field] = $field_type;
 
             $this->{$field} = $data[$field] ?? null;
         }
@@ -105,56 +99,71 @@ class Schema {
     /**
     *
     */
-    final public function __set(string $field, $mixed_value) {
-        if ((static::SCHEMA_FIELD_IS_READONLY && isset($this->__values[$field]))|| !$field_type = $this->__schema_fields[$field] ?? null)
+    public function __set(string $field, $mixed_value) {
+        if ((static::FIELD_SET_READONLY && array_key_exists($field, $this->__values)) || !$field_type = $this->__field_constraints[$field] ?? null)
             return;
-        
-        if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_LIST_OF . self::SCHEMA_FIELD_IS_SCHEMA) !== false 
-                && ($schema_fields = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type))) {
-            if (!is_array($mixed_value = $mixed_value ?? []))
-                $mixed_value = is_array($mixed_value = json_decode($mixed_value, JSON_OBJECT_AS_ARRAY)) ? $mixed_value : [];
 
-            $this->__values[$field] = array_map(function($value) use ($schema_fields) {
-                return new self($value, $schema_fields);
-            }, $mixed_value ?? []);
-        } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_SCHEMA) !== false 
-                && ($schema_fields = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type))) {
-            $this->__values[$field] = new self($mixed_value, $schema_fields);
-        } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_LIST_OF . self::SCHEMA_FIELD_IS_INSTANCE_OF) !== false 
-                && ($classname = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type)) && is_array($mixed_value)) {
-            $this->__values[$field] = array_map(function($value) use ($classname) {
-                return class_exists($classname) && ($value instanceOf $classname || (is_array($value = $value ?? []) && ($value = new $classname($value)))) ? $value : null;
-            }, $mixed_value ?? []);
-        } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_INSTANCE_OF) !== false 
-                && $classname = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type)) {
-            if ($mixed_value instanceOf $classname || (is_array($mixed_value = $mixed_value ?? []) && ($mixed_value = new $classname($mixed_value))))
-                $this->__values[$field] = $mixed_value;
-        } else if (strpos($field_type, $search = self::SCHEMA_FIELD_IS_LIST_OF) !== false 
-                && ($typeof = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $field_type)) && is_array($mixed_value = $mixed_value ?? [])) {
-            $this->__values[$field] = array_map(function($value) use ($typeof) {
-                return is_callable($typeof) && $typeof($value) ? $value : null;
-            }, $mixed_value ?? []);
-        } else if ($field_type === self::SCHEMA_FIELD_IS_LIST && is_array($value = $mixed_value ?? []))
-            $this->__values[$field] = $value;
-        else if ($field_type === self::SCHEMA_FIELD_IS_FILE && file_exists($value = $mixed_value ?? null) && is_file($value))
-            $this->__values[$field] = $value;
-        else if ($field_type === self::SCHEMA_FIELD_IS_DIRECTORY && file_exists($value = $mixed_value ?? null) && is_dir($value))
-            $this->__values[$field] = $value;
-        else if ($field_type === self::SCHEMA_FIELD_IS_CONTENT
-                && (is_string($value = $mixed_value ?? null) || is_numeric($value) || is_callable([$value, '__toString'])))
-            $this->__values[$field] = $value;
-        else if ($field_type === self::SCHEMA_FIELD_IS_STRING && is_string($value = $mixed_value ?? null))
-            $this->__values[$field] = $value;
-        else if ($field_type === self::SCHEMA_FIELD_IS_NUMERIC && is_numeric($value = $mixed_value ?? null))
-            $this->__values[$field] = $value;
-        else if (($field_type === self::SCHEMA_FIELD_IS_INTEGER || $field_type === self::SCHEMA_FIELD_IS_INT) && is_int($value = $mixed_value ?? null))
-            $this->__values[$field] = $value;
-        else if (($field_type === self::SCHEMA_FIELD_IS_BOOLEAN ||$field_type === self::SCHEMA_FIELD_IS_BOOL) && is_bool($value = $mixed_value ?? null))
-            $this->__values[$field] = $value;
-        else if ($field_type === self::SCHEMA_FIELD_IS_OBJECT && is_object($value = $mixed_value ?? (object) []))
-            $this->__values[$field] = $mixed_value;
-        else if (static::SCHEMA_FIELD_MISMATCH_SET_NULL || !isset($this->__values[$field]))
-            $this->__values[$field] = null; 
+        $this->__values[$field] = $this->__ismatched(explode('|', $field_type)[0], $field, $mixed_value);
+    }
+
+    /**
+    *
+    */
+    private function __toarray($data): array {
+        if ($data instanceOf self)
+            $data = $data->__values;
+        else if (is_string($data) && ($json_decode = json_decode($data, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
+            $data = $json_decode;
+
+        if (!is_array($data))
+            $data = [];
+
+        return $data;
+    }
+
+    /**
+    *
+    */
+    private function __ismatched(string $typeof, string $field, $mixed_value) {
+        if (!$typeof)
+            return $value;
+
+        if (strpos($typeof, $search = self::FIELD_IS_LIST_OF) !== false) {
+            $typeof = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $typeof);
+            $data = [];
+
+            if (!is_array($mixed_value))
+                return $data;
+
+            foreach ($mixed_value as $value)
+                $data[] = $this->__ismatched($typeof, $field, $value);
+
+            return $data;
+        } else if (strpos($typeof, $search = self::FIELD_IS_INSTANCE_OF) !== false) {
+            $classname = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $typeof);
+
+            if ($mixed_value instanceOf $classname || (is_array($mixed_value) && ($mixed_value = new $classname($mixed_value))))
+                return $mixed_value;
+        } else if (strpos($typeof, $search = self::FIELD_IS_SCHEMA) !== false)
+            return new self($mixed_value, preg_replace('/^' . preg_quote($search, '/') . '/is', null, $typeof));
+        else if ($typeof == self::FIELD_IS_STRING && is_string($mixed_value))
+            return $mixed_value;
+        else if ($typeof == self::FIELD_IS_NUMERIC && is_string($mixed_value))
+            return $mixed_value;
+        else if ($typeof === self::FIELD_IS_CONTENT && (is_string($mixed_value) || is_numeric($mixed_value) || is_callable([$mixed_value, '__toString'])))
+            return $mixed_value;
+        else if (in_array($typeof, [self::FIELD_IS_INT, self::FIELD_IS_INTEGER]) && is_int($mixed_value))
+            return $mixed_value;
+        else if (in_array($typeof, [self::FIELD_IS_FLOAT, self::FIELD_IS_DOUBLE]) && is_float($mixed_value))
+            return $mixed_value;
+        else if (in_array($typeof, [self::FIELD_IS_BOOL, self::FIELD_IS_BOOLEAN]) && is_bool($mixed_value))
+            return $mixed_value;
+        else if (in_array($typeof, [self::FIELD_IS_LIST, self::FIELD_IS_ARRAY]) && is_array($mixed_value))
+            return $mixed_value;
+        else if ($typeof == self::FIELD_IS_OBJECT && is_object($mixed_value))
+            return $mixed_value;
+
+        return static::FIELD_SET_NULL_ON_TYPE_MISMATCH ? null : $this->__values[$field];
     }
 
     /**
@@ -167,8 +176,8 @@ class Schema {
     /**
     *
     */
-    final public function __importPropertiesOf(\Schema $Schema, bool $merge_all = false) {
-        foreach ($Schema->__exportProperties() as $field => $value)
+    final public function __importPropertiesOf(self $self, bool $merge_all = false) {
+        foreach ($self->__exportProperties() as $field => $value)
             $this->{$field} = $merge_all ? array_replace_recursive($this->{$field}, $value) : $value;
     }
 
@@ -178,7 +187,7 @@ class Schema {
     final public function __exportProperties(): array {
         return [
             '__values' => $this->__values,
-            '__schema_fields' => $this->__schema_fields,
+            '__field_constraints' => $this->__field_constraints,
         ];
     }
 
