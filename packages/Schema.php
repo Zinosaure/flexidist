@@ -217,5 +217,32 @@ class Schema {
 
         return $export_values;
     }
+
+    /**
+    *
+    */
+    final public function createTableStructure() {
+        $columns = [];
+        
+        foreach ($this->__field_constraints as $field => $field_type) {
+            $constraints = explode('|', $field_type);
+            $datatype = 'BLOB';
+
+            if (in_array($field_type = array_shift($constraints), [self::FIELD_IS_INT, self::FIELD_IS_INTEGER]))
+                $datatype = 'INTEGER';
+            else if (in_array($field_type, [self::FIELD_IS_FLOAT, self::FIELD_IS_DOUBLE]))
+                $datatype = 'REAL';
+            else if (in_array($field_type, [self::FIELD_IS_NUMERIC, self::FIELD_IS_BOOL, self::FIELD_IS_BOOLEAN]))
+                $datatype = 'NUMERIC';
+            else if (in_array($field_type, [self::FIELD_IS_STRING, self::FIELD_IS_CONTENT]))
+                $datatype = 'TEXT';
+                
+            $columns[$field_type] = sprintf('`%s` %s %s', $field, $datatype, implode(' ', $constraints) ?: 'NULL');
+        }
+
+        $query_string = sprintf('CREATE TABLE IF NOT EXISTS `%s` (%s);', static::TABLE_NAME ?: strtolower(basename(get_called_class())), implode(', ', $columns));
+
+        return $query_string;
+    }
 }
 ?>
