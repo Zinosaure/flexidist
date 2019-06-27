@@ -40,7 +40,7 @@ abstract class SQLite extends \Schema {
     final public static function _createTable(?bool &$executed = false, ?string &$query_string = null) {
         $columns = [];
         
-        foreach (static::SCHEMA_DEFINITIONS as $field => $field_type) {
+        foreach ((new static())->__definitions() as $field => $field_type) {
             if (is_array($field_type))
                 $columns[] = sprintf('`%s` BLOB NULL', $field);
             else {
