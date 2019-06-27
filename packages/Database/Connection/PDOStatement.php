@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace Database\PDO;
+namespace Database\Connection;
 
 /**
 *

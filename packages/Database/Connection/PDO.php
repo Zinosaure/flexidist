@@ -3,7 +3,7 @@
 /**
 *
 */
-namespace Database\PDO;
+namespace Database\Connection;
 
 /**
 *
@@ -13,8 +13,7 @@ final class PDO extends \PDO {
 	/**
 	*
 	*/
-	private $exception = [];
-	protected static $PDOs = [];
+	private static $PDOs = [];
 
 	/**
 	*
@@ -23,14 +22,14 @@ final class PDO extends \PDO {
 		$options = array_replace_recursive([
 			\PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
 			\PDO::ATTR_EMULATE_PREPARES => true,
-			\PDO::ATTR_ERRMODE => \PDO::ERRMODE_SILENT,
+			\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
 			\PDO::ATTR_PERSISTENT => false,
 			\PDO::ATTR_STATEMENT_CLASS => [__NAMESPACE__ . '\PDOStatement', [&$this]],
 		], $options);
 
 		try {
 			parent::__construct($dsn, $username, $password, $options);
-		} catch (PDOException $PDOException) {
+		} catch (\PDOException $PDOException) {
 			throw $PDOException;
 		}
 	}
@@ -75,21 +74,7 @@ final class PDO extends \PDO {
 			if (($sth->bindValues($params)) && $sth->execute())
 				return $sth;
 
-		$this->exception = [
-			$query_string => [
-				'PDO' => $this->errorInfo(),
-				'PDOStatement' => $sth ? $sth->errorInfo() : ['00000', null, null],
-			],
-		];
-
 		return false;
-	}
-
-	/**
-	*
-	*/
-	final public function getException() {
-		return $this->exception;
 	}
 }
 ?>

@@ -15,147 +15,94 @@ abstract class SQLite extends \Schema {
     */
     const SQLITE_DATABASE_NAME = APPLICATION_PATH . 'database.db';
     const SQLITE_DATABASE_OPTIONS = [];
+    
     const SQLITE_TABLE_NAME = null;
-    const SQLITE_PRIMARY_KEY = null;
+    const SQLITE_TABLE_CONSTRAINTS = null;
 
-    const SQLITE_NOT_NULL_FIELDS = [];
-    const SQLITE_CHECK_FIELDS = [];
-    const SQLITE_DEFAULT_FIELDS = [];
-    const SQLITE_UNIQUE_FIELDS = [];
+    const SQLITE_COLUMN_IS_AUTOINCREMENT = '|AUTOINCREMENT';
+    const SQLITE_COLUMN_IS_PRIMARY_KEY = '|PRIMARY KEY';
+    const SQLITE_COLUMN_IS_NOT_NULL = '|NOT NULL';
+    const SQLITE_COLUMN_IS_UNIQUE = '|UNIQUE';
+    const SQLITE_COLUMN_REFERENCES_IS = '|REFERENCES ';
+    const SQLITE_COLUMN_DEFAULT_IS = '|DEFAULT ';
+    const SQLITE_COLUMN_CHECK_IS = '|CHECK ';
 
     /**
     *
     */
-    public function __construct($data = [], array $schema_fields = []) {
-        parent::__construct($data, $schema_fields);
-        $this->init();
+    final public static function PDO(): \Database\Connection\PDO {
+        return \Database\Connection\PDO::SQLite(static::SQLITE_DATABASE_NAME, static::SQLITE_DATABASE_OPTIONS);
     }
 
     /**
     *
     */
-    abstract public function init();
-
-    /**
-    *
-    */
-    final public static function PDO(): \Database\PDO\PDO {
-        return \Database\PDO\PDO::SQLite(static::SQLITE_DATABASE_NAME, static::SQLITE_DATABASE_OPTIONS);
-    }
-
-    /**
-    *
-    */
-    final public function getException(): array {
-		return static::PDO()->getException();
-    }
-
-    /**
-    *
-    */
-    final public function ID() {
-        if (static::SQLITE_PRIMARY_KEY)
-            return $this->{static::SQLITE_PRIMARY_KEY};
+    final public function _createTable(?bool &$executed = false, ?string &$query_string = null) {
+        $columns = [];
         
+        foreach ($this->__definitions() as $field => $field_type) {
+            $constraints = explode('|', $field_type);
+            $data_type = 'BLOB';
+
+            if (in_array($field_type = array_shift($constraints), [self::SCHEMA_FIELD_IS_INT, self::SCHEMA_FIELD_IS_INTEGER]) || in_array('AUTOINCREMENT', $constraints))
+                $data_type = 'INTEGER';
+            else if (in_array($field_type, [self::SCHEMA_FIELD_IS_FLOAT, self::SCHEMA_FIELD_IS_DOUBLE]))
+                $data_type = 'REAL';
+            else if (in_array($field_type, [self::SCHEMA_FIELD_IS_NUMERIC, self::SCHEMA_FIELD_IS_BOOL, self::SCHEMA_FIELD_IS_BOOLEAN]))
+                $data_type = 'NUMERIC';
+            else if (in_array($field_type, [self::SCHEMA_FIELD_IS_STRING, self::SCHEMA_FIELD_IS_CONTENT]))
+                $data_type = 'TEXT';
+                
+            $columns[] = sprintf('`%s` %s %s', $field, $data_type, implode(' ', $constraints) ?: 'NULL');
+        }
+
+        if (static::SQLITE_TABLE_CONSTRAINTS)
+            $columns[] = (string) static::SQLITE_TABLE_CONSTRAINTS;
+
+        return $executed = (bool) self::PDO()->execute($query_string = sprintf('CREATE TABLE IF NOT EXISTS `%s` (%s);', static::SQLITE_TABLE_NAME, implode(', ', $columns)));
+    }
+
+    /**
+    *
+    */
+    final public function _dropTable(?bool &$executed = false, ?string &$query_string = null) {
+        return $executed = (bool) self::PDO()->execute($query_string = sprintf('DROP TABLE IF EXISTS %s;', static::SQLITE_TABLE_NAME));
+    }
+
+    /**
+    *
+    */
+    final public function _truncateTable(?bool &$executed = false, ?string &$query_string = null) {
+        return $executed = (bool) self::PDO()->execute($query_string = sprintf('DELETE FROM %s;', static::SQLITE_TABLE_NAME));
+    }
+
+    /**
+    *
+    */
+    final public function _pragmaTable(?string &$query_string = null) {
+        if (($sth = static::PDO()->execute($queryString = sprintf('PRAGMA table_info(%s);', static::SQLITE_TABLE_NAME))) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
+            return $data;
+
         return null;
     }
-    
-    /**
-    *
-    */
-    final public static function count(): int {
-		$query_string = sprintf('SELECT COUNT(*) AS T FROM %s;', static::SQLITE_TABLE_NAME);
-
-		if (($sth = static::PDO()->execute($query_string)) && $data = $sth->fetch(\PDO::FETCH_ASSOC))
-			return (int) $data['T'];
-
-		return -1;
-	}
 
     /**
     *
     */
-    final public function save(): bool {
-        if (!static::PDO() || !static::SQLITE_TABLE_NAME)
-            return false;
+    final public function _describeTable(?string &$query_string = null) {
+        if (($sth = static::PDO()->execute($queryString = sprintf('SELECT sql AS query_string FROM sqlite_master WHERE name = "%s"', static::SQLITE_TABLE_NAME))) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
+            return $data['query_string'];
 
-        $params = [];
-
-        foreach ($this->__exportValues() as $field => $value) {
-            if (is_array($value))
-                $value = json_encode($value, JSON_NUMERIC_CHECK);
-
-            $params[$field] = $value;
-        }
-            
-
-        if ($ID = $this->ID()) {
-            $query_string = sprintf('UPDATE %s SET %s = ? WHERE %s = ?;', static::SQLITE_TABLE_NAME, implode(' = ?, ', array_keys($params)), static::SQLITE_PRIMARY_KEY);
-            $params[] = $ID;
-
-            if ($sth = static::PDO()->execute($query_string, $params))
-                return $sth->rowCount() > 0;
-
-            return false;
-        }
- 
-        $query_string = sprintf('INSERT INTO %s(%s) VALUES(%s);', static::SQLITE_TABLE_NAME, implode(', ', array_keys($params)), implode(', ', array_fill(0, count($params), '?')));
-     
-        if (($sth = static::PDO()->execute($query_string, $params)) && ($id = static::PDO()->lastInsertId()) > 0)
-            return static::SQLITE_PRIMARY_KEY ? ($this->{static::SQLITE_PRIMARY_KEY} = $id) > 0 : true;
-        
-        return false;
+        return null;
     }
 
     /**
     *
     */
-    final public function discard(): bool {
-        if (!static::SQLITE_TABLE_NAME || !($ID = $this->ID()))
-            return false;
+    final public function _showTables(?string &$query_string = null): array {
+        if (($sth = static::PDO()->execute($queryString = 'SELECT name FROM sqlite_master WHERE type = "table" AND name NOT LIKE "sqlite_%"')) && $data = $sth->fetchAll(\PDO::FETCH_ASSOC)) 
+            return $data;
 
-        $query_tring = sprintf('DELETE FROM %s WHERE %s = ?;', static::SQLITE_TABLE_NAME, static::SQLITE_PRIMARY_KEY);
-
-		if ($sth = static::PDO()->execute($query_string, [$ID]))
-            return $sth->rowCount() > 0;
-
-        return false;
-    }
-
-    /**
-    *
-    */
-    final public static function load($params) {
-        if (!is_array($params))
-            $params = [static::SQLITE_PRIMARY_KEY => $params];
- 
-        $queryString = sprintf('SELECT * FROM %s WHERE %s;', static::SQLITE_TABLE_NAME, implode(' = ? AND ', array_keys($params)) . ' = ?');
- 
-        if (($sth = static::PDO()->execute($queryString, $params)) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
-            return new static($data);
- 
-        return false;
-    }
-
-    /**
-    *
-    */
-    final public static function find(array $params = [], int $offset = -1, int $length = 20, bool $asc_order = true): \Generator {
-        $query_string = sprintf(
-			'SELECT * FROM %s %s %s %s;',
-				static::SQLITE_TABLE_NAME,
-				!empty($params) ? 'WHERE ' . implode(' = ? AND ', array_keys($params)) . ' = ?' : null,
-                static::SQLITE_PRIMARY_KEY ? sprintf('ORDER BY %s %s', static::SQLITE_PRIMARY_KEY, $asc_order ? 'ASC' : 'DESC') : null,
-				$offset > -1 ? 'LIMIT ?, ?' : null
-        );
-
-		if ($offset > -1)
-            $params += [$offset, $length];
-
-        if (($sth = static::PDO()->execute($query_string, $params)) && $data = $sth->fetchAll(\PDO::FETCH_ASSOC))
-            foreach ($data as $temp_data)
-                yield new static($temp_data);
-        
         return [];
     }
 }
