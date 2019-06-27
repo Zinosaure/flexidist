@@ -77,7 +77,7 @@ final class Response extends \Schema {
         510 => 'Not Extended',                                                // RFC2774
         511 => 'Network Authentication Required',                             // RFC6585
     ];
-    const SCHEMA_FIELDS = [
+    const SCHEMA_DEFINITIONS = [
         'Content' => self::SCHEMA_FIELD_IS_CONTENT,
         'status_code' => self::SCHEMA_FIELD_IS_INT,
         'headers' => self::SCHEMA_FIELD_IS_OBJECT,

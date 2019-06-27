@@ -13,8 +13,8 @@ final class SecurityControl extends \Schema {
     /**
     *
     */
-    const SCHEMA_FIELD_IS_READONLY = true;
-    const SCHEMA_FIELDS = [
+    const SCHEMA_FIELD_SET_READONLY = true;
+    const SCHEMA_DEFINITIONS = [
         'is_connected' => self::SCHEMA_FIELD_IS_BOOL,
         'user_permission' => self::SCHEMA_FIELD_IS_INT,
         'data'=> self::SCHEMA_FIELD_IS_OBJECT,

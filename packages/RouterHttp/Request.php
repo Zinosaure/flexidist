@@ -13,8 +13,8 @@ final class Request extends \Schema {
     /**
     *
     */
-    const SCHEMA_FIELD_IS_READONLY = true;
-    const SCHEMA_FIELDS = [
+    const SCHEMA_FIELD_SET_READONLY = true;
+    const SCHEMA_DEFINITIONS = [
         'servers' => self::SCHEMA_FIELD_IS_OBJECT,
         'args' => self::SCHEMA_FIELD_IS_OBJECT,
         'posts' => self::SCHEMA_FIELD_IS_OBJECT,

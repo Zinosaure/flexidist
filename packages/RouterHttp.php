@@ -8,8 +8,8 @@ final class RouterHttp extends \Schema {
 	/**
     *
     */
-    const SCHEMA_FIELD_IS_READONLY = true;
-    const SCHEMA_FIELDS = [
+    const SCHEMA_FIELD_SET_READONLY = true;
+    const SCHEMA_DEFINITIONS = [
         'Request' => self::SCHEMA_FIELD_IS_OBJECT,
         'Response' => self::SCHEMA_FIELD_IS_OBJECT,
         'SecurityControl' => self::SCHEMA_FIELD_IS_OBJECT,
