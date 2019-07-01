@@ -14,9 +14,9 @@ class View {
     /**
     *
     */
-    public function __construct(string $template, $data = []) {
+    public function __construct(string $template, $inherited_object = []) {
         $this->__template = $template;
-        $this->__inherited_object = (is_array($data) || is_object($data)) ? $data : [];
+        $this->__inherited_object = (is_array($inherited_object) || is_object($inherited_object)) ? $inherited_object : [];
     }
 
     /**

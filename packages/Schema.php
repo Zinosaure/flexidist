@@ -144,11 +144,13 @@ class Schema {
                 return $mixed_value;
         } else if (strpos($type_of, $search = self::SCHEMA_FIELD_IS_SCHEMA) !== false)
             return new self($mixed_value, preg_replace('/^' . preg_quote($search, '/') . '/is', null, $type_of));
-        else if ($type_of == self::SCHEMA_FIELD_IS_STRING && is_string($mixed_value))
+        else if (is_null($mixed_value))
+            return null;
+        else if ($type_of == self::SCHEMA_FIELD_IS_STRING && (is_string($mixed_value) || is_int($mixed_value) || is_numeric($mixed_value)))
             return $mixed_value;
         else if ($type_of == self::SCHEMA_FIELD_IS_NUMERIC && is_numeric($mixed_value))
             return (int) $mixed_value;
-        else if ($type_of === self::SCHEMA_FIELD_IS_CONTENT && (is_string($mixed_value) || is_numeric($mixed_value) || is_callable([$mixed_value, '__toString'])))
+        else if ($type_of == self::SCHEMA_FIELD_IS_CONTENT && (is_string($mixed_value) || is_numeric($mixed_value) || is_callable([$mixed_value, '__toString'])))
             return $mixed_value;
         else if (in_array($type_of, [self::SCHEMA_FIELD_IS_INT, self::SCHEMA_FIELD_IS_INTEGER]) && is_int($mixed_value))
             return $mixed_value;
@@ -197,6 +199,14 @@ class Schema {
         ];
     }
 
+    /**
+    *
+    */
+    final public function __importValues(array $data) {
+        foreach ($data as $field => $value)
+            $this->__values[$field] = $value;
+    }
+    
     /**
     *
     */

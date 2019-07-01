@@ -23,7 +23,7 @@ abstract class Repository extends Entity {
     /**
     *
     */
-    final public static function find(array $params = [], int $offset = -1, int $length = 20, bool $asc_order = true): \Generator {
+    final public static function find(array $params = [], int $offset = -1, int $length = 20, bool $asc_order = true): array {
         $query_string = sprintf(
             'SELECT * FROM %s %s %s %s;',
                 static::SQLITE_TABLE_NAME,
@@ -36,10 +36,11 @@ abstract class Repository extends Entity {
             $params += [$offset, $length];
 
         if (($sth = static::PDO()->execute($query_string, $params)) && $data = $sth->fetchAll(\PDO::FETCH_ASSOC))
-            foreach ($data as $temp_data)
-                yield new static($temp_data);
+            return array_map(function($temp_data) {
+                return new static($temp_data);
+            }, $data);
         
-        return $data;
+        return [];
     }
 }
 ?>

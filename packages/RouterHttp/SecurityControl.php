@@ -17,7 +17,7 @@ final class SecurityControl extends \Schema {
     const SCHEMA_DEFINITIONS = [
         'is_connected' => self::SCHEMA_FIELD_IS_BOOL,
         'user_permission' => self::SCHEMA_FIELD_IS_INT,
-        'data'=> self::SCHEMA_FIELD_IS_OBJECT,
+        'user_object'=> self::SCHEMA_FIELD_IS_OBJECT,
         'on_unauthorized' => self::SCHEMA_FIELD_IS_INSTANCE_OF . '\Closure',
         'on_forbidden' => self::SCHEMA_FIELD_IS_INSTANCE_OF . '\Closure',
     ];
@@ -25,11 +25,11 @@ final class SecurityControl extends \Schema {
     /**
     *
     */
-    public function __construct(?int $user_permission, $data = null, \Closure $on_unauthorized = null, \Closure $on_forbidden = null) {
+    public function __construct(?int $user_permission, $user_object = null, \Closure $on_unauthorized = null, \Closure $on_forbidden = null) {
         parent::__construct([
-            'is_connected' => !is_null($data),
+            'is_connected' => $user_permission && $user_permission > -1,
             'user_permission' => $user_permission,
-            'data' => (object) $data,
+            'user_object' => (object) $user_object,
             'on_unauthorized' => $on_unauthorized ?: function() { http_response_code(401); },
             'on_forbidden' => $on_forbidden ?: function() { http_response_code(403); },
         ]);
