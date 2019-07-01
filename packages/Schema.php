@@ -130,10 +130,7 @@ class Schema {
             $type_of = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $type_of);
             $data = [];
 
-            if (!is_array($mixed_value))
-                return $data;
-
-            foreach ($mixed_value as $value)
+            foreach ($this->__jsonDecode($mixed_value) as $value)
                 $data[] = $this->__setField($type_of, $field, $value);
 
             return $data;
