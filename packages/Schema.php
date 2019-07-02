@@ -29,6 +29,7 @@ class Schema {
 
     const SCHEMA_DEFINITIONS = [];
 
+    private $__assigns = [];
     private $__values = [];
     private $__definitions = [];
 
@@ -176,6 +177,16 @@ class Schema {
             $data = $json_decode;
 
         return is_array($data) ? $data : [];
+    }
+
+    /**
+    *
+    */
+    final public function __assign(string $field, $mixed_value = null) {
+        if ($mixed_value)
+            $this->__assigns[$field] = $mixed_value;
+
+        return $this->__assigns[$field];
     }
 
     /**
