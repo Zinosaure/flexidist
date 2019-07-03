@@ -134,7 +134,7 @@ final class RouterHttp extends \Schema {
  
             foreach(array_map(
                 function($value) {
-                    preg_match('/(\?)?(string|int|regex|\*)?\:([a-zA-Z0-9_]*)/is', $value, $match);
+                    preg_match('/(\?)?(string|int|\*|.*)?\:([a-zA-Z0-9_]*)/is', $value, $match);
  
                     return $match ? [
                     	'is_required' => $match[1] != '?',
@@ -158,13 +158,15 @@ final class RouterHttp extends \Schema {
                     } else if (!$options['is_required'] && is_null($callback_args[$options['var_name']] = $value))
                         continue;
  
-                    if ($is_no_limit = (strtolower($options['var_type']) == '*'))
+                    if ($is_no_limit = ($options['var_type'] == '*'))
                         $value = implode('/', array_slice($http_requests, $i));
                     else if (strtolower($options['var_type']) == 'string' && !($is_matched = is_string($value)))
                         break;
                     else if (strtolower($options['var_type']) == 'int' && !($is_matched = is_numeric($value)))
                         break;
- 
+                    else if (preg_match('/^enum\((.*)\)$/is', $options['var_type'], $enum) && !($is_matched = in_array($value, explode(',', $enum[1]))))
+                        break;
+                        
                     if ($options['var_type'])
                         $callback_args[$options['var_name']] = $value;
             }
