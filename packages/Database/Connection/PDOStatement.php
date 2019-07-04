@@ -15,6 +15,7 @@ final class PDOStatement extends \PDOStatement {
 	*/
 	public $PDO = null;
 	public $queryString = null;
+	public $inputParams = [];
 
 	/**
 	*
@@ -71,5 +72,24 @@ final class PDOStatement extends \PDOStatement {
 
 		return true;
 	}
+
+	/**
+	*
+	*/
+	final public function getLastInsertId() {
+        return $this->PDO->lastInsertId();
+    }
+
+	/**
+    *
+    */
+    final public function getResultCount(): int {
+        $query_string = sprintf('SELECT COUNT(*) AS QueryTotalCount FROM (%s)', preg_replace('/LIMIT\s*(.*)\s*;$/is', null, trim($this->queryString) . ';'));
+
+        if (($sth = $this->PDO->execute($query_string, $this->inputParams)) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
+            return (int) $data['QueryTotalCount'];
+
+        return -1;
+    }
 }
 ?>

@@ -87,7 +87,7 @@ abstract class SQLite extends \Schema {
     *
     */
     final public static function _pragmaTable(?string &$query_string = null) {
-        if (($sth = static::PDO()->execute($queryString = sprintf('PRAGMA table_info(%s);', static::SQLITE_TABLE_NAME))) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
+        if (($sth = static::PDO()->execute($query_string = sprintf('PRAGMA table_info(%s);', static::SQLITE_TABLE_NAME))) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
             return $data;
 
         return null;
@@ -97,7 +97,7 @@ abstract class SQLite extends \Schema {
     *
     */
     final public static function _describeTable(?string &$query_string = null) {
-        if (($sth = static::PDO()->execute($queryString = sprintf('SELECT sql AS query_string FROM sqlite_master WHERE name = "%s"', static::SQLITE_TABLE_NAME))) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
+        if (($sth = static::PDO()->execute($query_string = sprintf('SELECT sql AS query_string FROM sqlite_master WHERE name = "%s"', static::SQLITE_TABLE_NAME))) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
             return $data['query_string'];
 
         return null;
@@ -107,7 +107,7 @@ abstract class SQLite extends \Schema {
     *
     */
     final public static function _showTables(?string &$query_string = null): array {
-        if (($sth = static::PDO()->execute($queryString = 'SELECT name FROM sqlite_master WHERE type = "table" AND name NOT LIKE "sqlite_%"')) && $data = $sth->fetchAll(\PDO::FETCH_ASSOC)) 
+        if (($sth = static::PDO()->execute($query_string = 'SELECT name FROM sqlite_master WHERE type = "table" AND name NOT LIKE "sqlite_%"')) && $data = $sth->fetchAll(\PDO::FETCH_ASSOC)) 
             return $data;
 
         return [];

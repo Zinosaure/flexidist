@@ -70,10 +70,13 @@ final class PDO extends \PDO {
 	*
 	*/
 	final public function execute(string $query_string, array $params = [], array $options = []) {
-		if ($sth = $this->prepare($query_string, $options))
+		if ($sth = $this->prepare($query_string, $options)) {
+			$sth->inputParams = $params;
+
 			if (($sth->bindValues($params)) && $sth->execute())
 				return $sth;
-
+		}
+			
 		return false;
 	}
 }
