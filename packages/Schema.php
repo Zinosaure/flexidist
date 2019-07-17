@@ -29,7 +29,6 @@ class Schema {
 
     const SCHEMA_DEFINITIONS = [];
 
-    private $__assigns = [];
     private $__values = [];
     private $__definitions = [];
 
@@ -142,7 +141,7 @@ class Schema {
                 return $mixed_value;
         } else if (strpos($type_of, $search = self::SCHEMA_FIELD_IS_SCHEMA) !== false)
             return new self($mixed_value, preg_replace('/^' . preg_quote($search, '/') . '/is', null, $type_of));
-        else if (is_null($mixed_value))
+        else if (!$mixed_value)
             return null;
         else if ($type_of == self::SCHEMA_FIELD_IS_STRING && (is_string($mixed_value) || is_int($mixed_value) || is_numeric($mixed_value)))
             return $mixed_value;
@@ -152,8 +151,8 @@ class Schema {
             return $mixed_value;
         else if (in_array($type_of, [self::SCHEMA_FIELD_IS_INT, self::SCHEMA_FIELD_IS_INTEGER]) && is_int($mixed_value))
             return $mixed_value;
-        else if (in_array($type_of, [self::SCHEMA_FIELD_IS_FLOAT, self::SCHEMA_FIELD_IS_DOUBLE]) && is_float($mixed_value))
-            return $mixed_value;
+        else if (in_array($type_of, [self::SCHEMA_FIELD_IS_FLOAT, self::SCHEMA_FIELD_IS_DOUBLE]) && is_float((float) $mixed_value))
+            return (float) $mixed_value;
         else if (in_array($type_of, [self::SCHEMA_FIELD_IS_BOOL, self::SCHEMA_FIELD_IS_BOOLEAN]) && is_bool($mixed_value))
             return $mixed_value;
         else if (in_array($type_of, [self::SCHEMA_FIELD_IS_LIST, self::SCHEMA_FIELD_IS_ARRAY]) && is_array($mixed_value))
@@ -177,16 +176,6 @@ class Schema {
             $data = $json_decode;
 
         return is_array($data) ? $data : [];
-    }
-
-    /**
-    *
-    */
-    final public function __assign(string $field, $mixed_value = null) {
-        if ($mixed_value)
-            $this->__assigns[$field] = $mixed_value;
-
-        return $this->__assigns[$field];
     }
 
     /**
