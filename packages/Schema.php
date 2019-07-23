@@ -201,7 +201,8 @@ class Schema {
     */
     final public function __importValues(array $data) {
         foreach ($data as $field => $value)
-            $this->__values[$field] = $value;
+            if (array_key_exists($field, $this->__definitions))
+                $this->__values[$field] = $value;
     }
     
     /**
