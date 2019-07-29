@@ -60,6 +60,15 @@ final class Request extends \Schema {
     /**
     *
     */
+    public function setCookie(string $name, string $value, int $expires): string {
+        setcookie($name, $value, $expires);
+        
+        return $this->cookies->{$name} = $expires > time() ? $value : null;
+    }
+
+    /**
+    *
+    */
     public static function send(string $request_uri, array $options = []) {
         return @file_get_contents($request_uri, false, stream_context_create(array_replace_recursive([
             'http' => [

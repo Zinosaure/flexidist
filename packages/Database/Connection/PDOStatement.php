@@ -84,9 +84,10 @@ final class PDOStatement extends \PDOStatement {
     *
     */
     final public function getResultCount(): int {
-        $query_string = sprintf('SELECT COUNT(*) AS QueryTotalCount FROM (%s)', preg_replace('/LIMIT\s*(.*)\s*;$/is', null, trim($this->queryString) . ';'));
-
-        if (($sth = $this->PDO->execute($query_string, $this->inputParams)) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
+        $query_string = str_replace(';', null, trim($this->queryString));
+		$query_string = sprintf('SELECT COUNT(*) AS QueryTotalCount FROM (%s)', preg_replace('/LIMIT(.+)(;|\)|$)/isU', null, $query_string));
+		
+		if (($sth = $this->PDO->execute($query_string, $this->inputParams)) && $data = $sth->fetch(\PDO::FETCH_ASSOC)) 
             return (int) $data['QueryTotalCount'];
 
         return -1;
