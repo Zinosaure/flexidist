@@ -36,54 +36,56 @@ class Schema {
     *
     */
     public function __construct($data = [], $schema_definitions = []) {
-        $data = $this->__jsonDecode($data);
-        $schema_definitions = $this->__jsonDecode($schema_definitions);
-        
-        foreach($schema_definitions ?: static::SCHEMA_DEFINITIONS as $field => $field_type) {
-            if (preg_match('/\[\]$/', $field) && $field = preg_replace('/(\[\])$/', null, $field)) {
-                if (is_array($field_type))
-                    $this->__definitions[$field] = self::SCHEMA_FIELD_IS_LIST_OF . self::SCHEMA_FIELD_IS_SCHEMA . json_encode($field_type);
-                else
-                    $this->__definitions[$field] = self::SCHEMA_FIELD_IS_LIST_OF . $field_type;
-            }  else if (is_array($field_type))
-                $this->__definitions[$field] = self::SCHEMA_FIELD_IS_SCHEMA . json_encode($field_type);
-            else
-                $this->__definitions[$field] = $field_type;
+        if ($data instanceOf self)
+            $data = $data->__values;
+        else if (is_string($data) && ($json_decode = json_decode($data, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
+            $data = $json_decode;
 
-            $this->{$field} = $data[$field] ?? null;
+        $data = is_array($data) ? $data : [];
+
+        if ($schema_definitions instanceOf self)
+            $schema_definitions = $schema_definitions->__definitions;
+        else if (is_string($schema_definitions) && ($json_decode = json_decode($schema_definitions, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
+            $schema_definitions = $json_decode;
+
+        $schema_definitions = is_array($schema_definitions) ? $schema_definitions : [];
+
+        foreach ($schema_definitions ?: static::SCHEMA_DEFINITIONS as $attr_name => $attr_type) {
+            $default_value = null;
+
+            if (is_array($attr_type) && $default_value = new self([], $attr_type))
+                $attr_type = self::SCHEMA_FIELD_IS_SCHEMA . json_encode($attr_type);
+                
+            if (preg_match('/\[\]$/', $attr_name) && ($attr_name = preg_replace('/(\[\])$/', null, $attr_name)) && !$default_value = [])
+                $attr_type = self::SCHEMA_FIELD_IS_LIST_OF . $attr_type;
+
+            $this->__definitions[$attr_name] = $attr_type;
+            $this->__values[$attr_name] = $this->__setField(explode('|', $attr_type)[0], $attr_name, $data[$attr_name] ?? $default_value);
         }
     }
 
     /**
     *
     */
-    final public function __isset(string $field): bool {
-        if (array_key_exists($field, $this->__values))
-            return true;
-        
-        return false;
+    public function __toString(): string {
+        return json_encode($this->__exportValues(), JSON_NUMERIC_CHECK);
     }
 
     /**
     *
     */
-    final public function __unset(string $field) {}
-    
-    /**
-    *
-    */
-    final public function &__get(string $field) {
+    final public function &__get(string $attr_name) {
         $null = null;
 
-        if (array_key_exists($field, $this->__values)) {
-            if (is_array($list = $this->__values[$field]))
+        if (array_key_exists($attr_name, $this->__values)) {
+            if (is_array($list = $this->__values[$attr_name]))
                 return $list;
                 
-            return $this->__values[$field];
+            return $this->__values[$attr_name];
         }
 
         $trace = debug_backtrace();
-        trigger_error(sprintf('Undefined property via __get(): %s in %s from class %s', $field, $trace[0]['file'], get_called_class()), E_USER_NOTICE);
+        trigger_error(sprintf('Undefined property via __get(): %s in %s from class %s', $attr_name, $trace[0]['file'], get_called_class()), E_USER_NOTICE);
 
         return $null;
     }
@@ -91,53 +93,39 @@ class Schema {
     /**
     *
     */
-    final public function __set(string $field, $mixed_value) {
-        if ((static::SCHEMA_FIELD_SET_READONLY && array_key_exists($field, $this->__values)) || !$field_type = $this->__definitions[$field] ?? null)
+    final public function __set(string $attr_name, $mixed_value) {
+        if (static::SCHEMA_FIELD_SET_READONLY || !$attr_type = $this->__definitions[$attr_name] ?? null)
             return;
 
-        $this->__values[$field] = $this->__setField(explode('|', $field_type)[0], $field, $mixed_value);
+        $this->__values[$attr_name] = $this->__setField(explode('|', $attr_type)[0], $attr_name, $mixed_value);
     }
 
     /**
     *
     */
-    public function __toString() {
-        return json_encode($this->__exportValues(), JSON_NUMERIC_CHECK);
-    }
-
-    /**
-    *
-    */
-    final public function __values(): array {
-        return $this->__values;
-    }
-
-    /**
-    *
-    */
-    final public function __definitions(): array {
-        return $this->__definitions;
-    }
-
-    /**
-    *
-    */
-    private function __setField(string $type_of, string $field, $mixed_value) {
+    private function __setField(string $type_of, string $attr_name, $mixed_value) {
         if (!$type_of)
-            return $value;
+            return $mixed_value;
 
         if (strpos($type_of, $search = self::SCHEMA_FIELD_IS_LIST_OF) !== false) {
             $type_of = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $type_of);
             $data = [];
 
-            foreach ($this->__jsonDecode($mixed_value) as $value)
-                $data[] = $this->__setField($type_of, $field, $value);
+            if ($mixed_value instanceOf self)
+                $mixed_value = $mixed_value->__values;
+            else if (is_string($mixed_value) && ($json_decode = json_decode($mixed_value, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
+                $mixed_value = $json_decode;
+
+            foreach (is_array($mixed_value) ? $mixed_value : [] as $value)
+                $data[] = $this->__setField($type_of, $attr_name, $value);
 
             return $data;
         } else if (strpos($type_of, $search = self::SCHEMA_FIELD_IS_INSTANCE_OF) !== false) {
             $classname = preg_replace('/^' . preg_quote($search, '/') . '/is', null, $type_of);
 
-            if ($mixed_value instanceOf $classname || (is_array($mixed_value) && ($mixed_value = new $classname($mixed_value))))
+            if ($mixed_value instanceOf $classname || (is_array($mixed_value) && ($mixed_value = new $classname(... array_values($mixed_value)))))
+                return $mixed_value;
+            else if (is_string($mixed_value) && (($mixed_value = json_decode($schema_definitions, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE) && $mixed_value = new $classname(... array_values($mixed_value)))
                 return $mixed_value;
         } else if (strpos($type_of, $search = self::SCHEMA_FIELD_IS_SCHEMA) !== false)
             return new self($mixed_value, preg_replace('/^' . preg_quote($search, '/') . '/is', null, $type_of));
@@ -151,39 +139,41 @@ class Schema {
             return $mixed_value;
         else if (in_array($type_of, [self::SCHEMA_FIELD_IS_INT, self::SCHEMA_FIELD_IS_INTEGER]) && is_int($mixed_value))
             return $mixed_value;
-        else if (in_array($type_of, [self::SCHEMA_FIELD_IS_FLOAT, self::SCHEMA_FIELD_IS_DOUBLE]) && is_float((float) $mixed_value))
-            return (float) $mixed_value;
         else if (in_array($type_of, [self::SCHEMA_FIELD_IS_BOOL, self::SCHEMA_FIELD_IS_BOOLEAN]) && is_bool($mixed_value))
             return $mixed_value;
         else if (in_array($type_of, [self::SCHEMA_FIELD_IS_LIST, self::SCHEMA_FIELD_IS_ARRAY]) && is_array($mixed_value))
             return $mixed_value;
         else if ($type_of == self::SCHEMA_FIELD_IS_OBJECT && is_object($mixed_value))
             return $mixed_value;
+        else if (in_array($type_of, [self::SCHEMA_FIELD_IS_FLOAT, self::SCHEMA_FIELD_IS_DOUBLE]) && is_float((float) $mixed_value))
+            return (float) $mixed_value;
 
         if (static::SCHEMA_FIELD_SET_NULL_ON_TYPE_MISMATCH)
             return null;
             
-        return $this->__values[$field] ?? null;
+        return $this->__values[$attr_name] ?? null;
     }
 
     /**
     *
     */
-    private function __jsonDecode($data): array {
-        if ($data instanceOf self)
-            $data = $data->__values;
-        else if (is_string($data) && ($json_decode = json_decode($data, JSON_OBJECT_AS_ARRAY)) && json_last_error() === JSON_ERROR_NONE)
-            $data = $json_decode;
+    final public function __getValues(): array {
+        return $this->__values;
+    }
 
-        return is_array($data) ? $data : [];
+    /**
+    *
+    */
+    final public function __getDefinitions(): array {
+        return $this->__definitions;
     }
 
     /**
     *
     */
     final public function __importPropertiesOf(self $self, bool $merge_all = false) {
-        foreach ($self->__exportProperties() as $field => $value)
-            $this->{$field} = $merge_all ? array_replace_recursive($this->{$field}, $value) : $value;
+        foreach ($self->__exportProperties() as $attr_name => $value)
+            $this->{$attr_name} = $merge_all ? array_replace_recursive($this->{$attr_name}, $value) : $value;
     }
 
     /**
@@ -200,9 +190,9 @@ class Schema {
     *
     */
     final public function __importValues(array $data) {
-        foreach ($data as $field => $value)
-            if (array_key_exists($field, $this->__definitions))
-                $this->__values[$field] = $value;
+        foreach ($data as $attr_name => $value)
+            if (array_key_exists($attr_name, $this->__definitions))
+                $this->__values[$attr_name] = $value;
     }
     
     /**
@@ -211,13 +201,13 @@ class Schema {
     final public function __exportValues(): array {
         $export_values = [];
 
-        foreach ($this->__values as $field => $value) {
+        foreach ($this->__values as $attr_name => $value) {
             if ($value instanceOf self)
-                $export_values[$field] = $value->__exportValues();
+                $export_values[$attr_name] = $value->__exportValues();
             else if (is_object($value) && is_callable([$value, '__toString']))
-                $export_values[$field] = (string) $value;
+                $export_values[$attr_name] = (string) $value;
             else if (is_array($value))
-                $export_values[$field] = array_map(function($temp_value) {
+                $export_values[$attr_name] = array_map(function($temp_value) {
                     if ($temp_value instanceOf self)
                         return $temp_value->__exportValues();
                     else if (is_object($temp_value) && is_callable([$value, '__toString']))
@@ -226,7 +216,7 @@ class Schema {
                         return $temp_value;
                 }, $value);
             else  
-                $export_values[$field] = $value;
+                $export_values[$attr_name] = $value;
         }
 
         return $export_values;
