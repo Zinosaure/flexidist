@@ -55,12 +55,15 @@ class Schema {
 
             if (is_array($attr_type) && $default_value = new self([], $attr_type))
                 $attr_type = self::SCHEMA_FIELD_IS_SCHEMA . json_encode($attr_type);
-                
-            if (preg_match('/\[\]$/', $attr_name) && ($attr_name = preg_replace('/(\[\])$/', null, $attr_name)) && !$default_value = [])
+            
+            if (preg_match('/\{\}/', $attr_name) && ($attr_name = preg_replace('/(\{\})/', null, $attr_name)) && !$default_value = null)
+                $attr_type = self::SCHEMA_FIELD_IS_INSTANCE_OF . $attr_type;
+
+            if (preg_match('/\[\]/', $attr_name) && ($attr_name = preg_replace('/(\[\])/', null, $attr_name)) && !$default_value = [])
                 $attr_type = self::SCHEMA_FIELD_IS_LIST_OF . $attr_type;
 
             $this->__definitions[$attr_name] = $attr_type;
-            $this->__values[$attr_name] = $this->__setField(explode('|', $attr_type)[0], $attr_name, $data[$attr_name] ?? $default_value);
+            $this->__values[$attr_name] = $this->__setField(explode('|', $attr_type)[0], $attr_name, $data[$attr_name] ?? null) ?? $default_value;
         }
     }
 
@@ -131,13 +134,9 @@ class Schema {
             return new self($mixed_value, preg_replace('/^' . preg_quote($search, '/') . '/is', null, $type_of));
         else if (is_null($mixed_value))
             return null;
-        else if ($type_of == self::SCHEMA_FIELD_IS_STRING && (is_string($mixed_value) || is_int($mixed_value) || is_numeric($mixed_value)))
+        else if ($type_of == self::SCHEMA_FIELD_IS_STRING && (is_string($mixed_value) || is_numeric($mixed_value)))
             return $mixed_value;
-        else if ($type_of == self::SCHEMA_FIELD_IS_NUMERIC && is_numeric($mixed_value))
-            return (int) $mixed_value;
         else if ($type_of == self::SCHEMA_FIELD_IS_CONTENT && (is_string($mixed_value) || is_numeric($mixed_value) || is_callable([$mixed_value, '__toString'])))
-            return $mixed_value;
-        else if (in_array($type_of, [self::SCHEMA_FIELD_IS_INT, self::SCHEMA_FIELD_IS_INTEGER]) && is_int($mixed_value))
             return $mixed_value;
         else if (in_array($type_of, [self::SCHEMA_FIELD_IS_BOOL, self::SCHEMA_FIELD_IS_BOOLEAN]) && is_bool($mixed_value))
             return $mixed_value;
@@ -145,6 +144,8 @@ class Schema {
             return $mixed_value;
         else if ($type_of == self::SCHEMA_FIELD_IS_OBJECT && is_object($mixed_value))
             return $mixed_value;
+        else if (in_array($type_of, [self::SCHEMA_FIELD_IS_INT, self::SCHEMA_FIELD_IS_INTEGER, self::SCHEMA_FIELD_IS_NUMERIC]) && is_numeric($mixed_value))
+            return (int) $mixed_value;
         else if (in_array($type_of, [self::SCHEMA_FIELD_IS_FLOAT, self::SCHEMA_FIELD_IS_DOUBLE]) && is_float((float) $mixed_value))
             return (float) $mixed_value;
 
