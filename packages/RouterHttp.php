@@ -10,9 +10,9 @@ final class RouterHttp extends \Schema {
     */
     const SCHEMA_FIELD_SET_READONLY = true;
     const SCHEMA_DEFINITIONS = [
-        'Request' => self::SCHEMA_FIELD_IS_INSTANCE_OF . __NAMESPACE__ . '\RouterHttp\Request',
-        'Response' => self::SCHEMA_FIELD_IS_INSTANCE_OF . __NAMESPACE__ . '\RouterHttp\Response',
-        'SecurityControl' => self::SCHEMA_FIELD_IS_INSTANCE_OF . __NAMESPACE__ . '\RouterHttp\SecurityControl',
+        'Request{}' => __NAMESPACE__ . '\RouterHttp\Request',
+        'Response{}' => __NAMESPACE__ . '\RouterHttp\Response',
+        'SecurityControl{}' => __NAMESPACE__ . '\RouterHttp\SecurityControl',
     ];
     
     protected $callback = null;

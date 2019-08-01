@@ -77,6 +77,11 @@ class Schema {
     /**
     *
     */
+    final public function __unset(string $attr_name) {}
+
+    /**
+    *
+    */
     final public function &__get(string $attr_name) {
         $null = null;
 
